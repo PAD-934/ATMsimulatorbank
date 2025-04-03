@@ -177,7 +177,7 @@ public class ATMInterface extends JFrame {
         loginPanel.add(keypadPanel, BorderLayout.SOUTH);
 
         // Action listeners remain the same
-        loginButton.addActionListener(e -> {
+        loginButton.addActionListener(_ -> {
             String accNum = accField.getText();
             String pin = new String(pinField.getPassword());
             
@@ -197,7 +197,7 @@ public class ATMInterface extends JFrame {
             }
         });
 
-        signUpButton.addActionListener(e -> {
+        signUpButton.addActionListener(_ -> {
             cardLayout.show(mainPanel, "signup");
             accField.setText("");
             pinField.setText("");
@@ -388,7 +388,7 @@ public class ATMInterface extends JFrame {
         signUpPanel.add(keypadPanel, BorderLayout.SOUTH);
 
         // Action listeners
-        createButton.addActionListener(e -> createAccount(
+        createButton.addActionListener(_ -> createAccount(
             nameField.getText(),
             accNumField.getText(),
             new String(pinField.getPassword()),
@@ -396,7 +396,7 @@ public class ATMInterface extends JFrame {
             initialDepositField.getText()
         ));
 
-        backButton.addActionListener(e -> {
+        backButton.addActionListener(_ -> {
             cardLayout.show(mainPanel, "login");
             nameField.setText("");
             accNumField.setText("");
@@ -555,7 +555,7 @@ public class ATMInterface extends JFrame {
         
         for (String option : options) {
             JButton button = createATMButton(option, new Color(0, 100, 0));
-            button.addActionListener(e -> {
+            button.addActionListener(_ -> {
                 playSound("button");
                 switch (option) {
                     case "CHECK BALANCE" -> checkBalance();
@@ -628,7 +628,7 @@ public class ATMInterface extends JFrame {
         cardLayout.show(mainPanel, "changePin");
 
         // Action listeners
-        confirmButton.addActionListener(e -> {
+        confirmButton.addActionListener(_ -> {
             String currentPin = new String(currentPinField.getPassword());
             String newPin = new String(newPinField.getPassword());
             String confirmPin = new String(confirmPinField.getPassword());
@@ -654,7 +654,7 @@ public class ATMInterface extends JFrame {
             showSuccessScreen("PIN changed successfully!", "PIN CHANGE", 0.0);
         });
 
-        cancelButton.addActionListener(e -> cardLayout.show(mainPanel, "mainMenu"));
+        cancelButton.addActionListener(_ -> cardLayout.show(mainPanel, "mainMenu"));
     }
 
     private boolean isValidPin(String pin) {
@@ -714,7 +714,7 @@ public class ATMInterface extends JFrame {
         // Simulate printing sound
         playSound("printer");
 
-        doneButton.addActionListener(e -> {
+        doneButton.addActionListener(_ -> {
             playSound("button");
             cardLayout.show(mainPanel, "mainMenu");
         });
@@ -760,12 +760,12 @@ public class ATMInterface extends JFrame {
         cardLayout.show(mainPanel, "receiptOption");
         
         // Action listeners
-        yesButton.addActionListener(e -> {
+        yesButton.addActionListener(_ -> {
             showPrintingScreen();
             generateReceipt(transactionType, amount);
         });
         
-        noButton.addActionListener(e -> cardLayout.show(mainPanel, "mainMenu"));
+        noButton.addActionListener(_ -> cardLayout.show(mainPanel, "mainMenu"));
     }
 
     private void checkBalance() {
@@ -794,7 +794,7 @@ public class ATMInterface extends JFrame {
         
         for (int amount : quickAmounts) {
             JButton amountButton = createATMButton("₱" + amount, new Color(0, 100, 0));
-            amountButton.addActionListener(e -> {
+            amountButton.addActionListener(_ -> {
                 amountField.setText(String.valueOf(amount));
                 playSound("button");
             });
@@ -822,7 +822,7 @@ public class ATMInterface extends JFrame {
         cardLayout.show(mainPanel, "withdraw");
 
         // Action listeners
-        withdrawButton.addActionListener(e -> {
+        withdrawButton.addActionListener(_ -> {
             try {
                 double amount = Double.parseDouble(amountField.getText());
                 if (amount <= 0) {
@@ -851,7 +851,7 @@ public class ATMInterface extends JFrame {
             }
         });
 
-        cancelButton.addActionListener(e -> cardLayout.show(mainPanel, "mainMenu"));
+        cancelButton.addActionListener(_ -> cardLayout.show(mainPanel, "mainMenu"));
     }
 
     private void showDepositDialog() {
@@ -889,7 +889,7 @@ public class ATMInterface extends JFrame {
         cardLayout.show(mainPanel, "deposit");
 
         // Action listeners
-        depositButton.addActionListener(e -> {
+        depositButton.addActionListener(_ -> {
             try {
                 double amount = Double.parseDouble(amountField.getText());
                 if (amount <= 0) {
@@ -914,7 +914,7 @@ public class ATMInterface extends JFrame {
             }
         });
 
-        cancelButton.addActionListener(e -> cardLayout.show(mainPanel, "mainMenu"));
+        cancelButton.addActionListener(_ -> cardLayout.show(mainPanel, "mainMenu"));
     }
 
     private void showTransferDialog() {
@@ -962,7 +962,7 @@ public class ATMInterface extends JFrame {
         cardLayout.show(mainPanel, "transfer");
 
         // Action listeners
-        transferButton.addActionListener(e -> {
+        transferButton.addActionListener(_ -> {
             try {
                 String recipientAccNum = accountField.getText();
                 double amount = Double.parseDouble(amountField.getText());
@@ -1003,7 +1003,7 @@ public class ATMInterface extends JFrame {
             }
         });
 
-        cancelButton.addActionListener(e -> cardLayout.show(mainPanel, "mainMenu"));
+        cancelButton.addActionListener(_ -> cardLayout.show(mainPanel, "mainMenu"));
     }
 
     private void showSuccessScreen(String message, String transactionType, double amount) {
@@ -1050,12 +1050,12 @@ public class ATMInterface extends JFrame {
         cardLayout.show(mainPanel, "success");
         
         // Action listeners
-        yesButton.addActionListener(e -> {
+        yesButton.addActionListener(_ -> {
             showPrintingScreen();
             generateReceipt(transactionType, amount);
         });
         
-        noButton.addActionListener(e -> cardLayout.show(mainPanel, "mainMenu"));
+        noButton.addActionListener(_ -> cardLayout.show(mainPanel, "mainMenu"));
     }
 
     // Add this method before the main method
@@ -1164,6 +1164,6 @@ public class ATMInterface extends JFrame {
         mainPanel.add(errorPanel, "error");
         cardLayout.show(mainPanel, "error");
         
-        okButton.addActionListener(e -> cardLayout.show(mainPanel, "mainMenu"));
+        okButton.addActionListener(_ -> cardLayout.show(mainPanel, "mainMenu"));
     }
 } // End of class ATMInterface
