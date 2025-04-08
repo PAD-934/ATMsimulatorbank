@@ -589,34 +589,47 @@ public class ATMInterface extends JFrame {
 
     private void createMainMenuPanel() {
         JPanel menuPanel = new JPanel(new BorderLayout());
-        menuPanel.setBackground(new Color(50, 50, 50));
+        menuPanel.setBackground(new Color(20, 20, 30)); // Darker futuristic background
 
-        // Top panel with welcome message, clock, and animations
+        // Top panel with holographic-style welcome message and system info
         JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.setBackground(Color.BLACK);
-        topPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        topPanel.setBackground(new Color(0, 10, 20)); // Deep space blue
+        topPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(0, 150, 255), 2), // Neon blue border
+            BorderFactory.createEmptyBorder(20, 20, 20, 20)
+        ));
 
-        // Create clock and date panel
+        // Enhanced clock panel with pulsing effect
         JPanel clockPanel = new JPanel(new GridLayout(2, 1));
-        clockPanel.setBackground(Color.BLACK);
+        clockPanel.setBackground(new Color(0, 10, 20));
         JLabel clockLabel = new JLabel();
         JLabel dateLabel = new JLabel();
-        clockLabel.setFont(new Font("Consolas", Font.BOLD, 24));
-        dateLabel.setFont(new Font("Consolas", Font.BOLD, 18));
-        clockLabel.setForeground(new Color(0, 255, 0));
-        dateLabel.setForeground(new Color(0, 255, 0));
+        clockLabel.setFont(new Font("Consolas", Font.BOLD, 28));
+        dateLabel.setFont(new Font("Consolas", Font.BOLD, 20));
+        
+        // Create pulsing effect for clock
+        Timer pulseTimer = new Timer(1000, e -> {
+            clockLabel.setForeground(new Color(0, 255, 255)); // Cyan
+            new Timer(500, e2 -> {
+                clockLabel.setForeground(new Color(0, 200, 200));
+            }).start();
+        });
+        pulseTimer.start();
+        
+        dateLabel.setForeground(new Color(0, 200, 255)); // Light blue
         clockLabel.setHorizontalAlignment(JLabel.RIGHT);
         dateLabel.setHorizontalAlignment(JLabel.RIGHT);
         clockPanel.add(clockLabel);
         clockPanel.add(dateLabel);
 
-        // Update clock every second
-        Timer clockTimer = new Timer(1000, e -> {
+        // Update clock with milliseconds for futuristic feel
+        Timer clockTimer = new Timer(50, e -> {
             Calendar cal = Calendar.getInstance();
-            clockLabel.setText(String.format("%02d:%02d:%02d", 
+            clockLabel.setText(String.format("%02d:%02d:%02d.%03d", 
                 cal.get(Calendar.HOUR_OF_DAY),
                 cal.get(Calendar.MINUTE),
-                cal.get(Calendar.SECOND)));
+                cal.get(Calendar.SECOND),
+                cal.get(Calendar.MILLISECOND)));
             dateLabel.setText(String.format("%02d/%02d/%04d",
                 cal.get(Calendar.DAY_OF_MONTH),
                 cal.get(Calendar.MONTH) + 1,
@@ -624,82 +637,283 @@ public class ATMInterface extends JFrame {
         });
         clockTimer.start();
 
-        // Welcome message with animation
-        JLabel welcomeLabel = new JLabel("Choose a transaction");
-        welcomeLabel.setFont(new Font("Consolas", Font.BOLD, 32));
-        welcomeLabel.setForeground(Color.WHITE);
-        welcomeLabel.setHorizontalAlignment(JLabel.CENTER);
-
-        // Scrolling message panel for bank announcements
-        JLabel scrollingMsg = new JLabel("Welcome to BDA Bank • Your Trusted Banking Partner • ");
-        scrollingMsg.setFont(new Font("Consolas", Font.PLAIN, 16));
-        scrollingMsg.setForeground(new Color(0, 255, 0));
-        
-        Timer scrollTimer = new Timer(100, e -> {
-            String text = scrollingMsg.getText();
-            scrollingMsg.setText(text.substring(1) + text.charAt(0));
-        });
-        scrollTimer.start();
-
-        JPanel labelPanel = new JPanel(new GridLayout(3, 1, 5, 5));
-        labelPanel.setBackground(Color.BLACK);
-        labelPanel.add(welcomeLabel);
-        labelPanel.add(scrollingMsg);
-
-        topPanel.add(labelPanel, BorderLayout.CENTER);
-        topPanel.add(clockPanel, BorderLayout.EAST);
-
-        // Main options panel with side buttons and central display
-        JPanel mainOptionsPanel = new JPanel(new BorderLayout());
-        mainOptionsPanel.setBackground(Color.BLACK);
-        mainOptionsPanel.setBorder(BorderFactory.createEmptyBorder(10, 50, 10, 50));
-
-        // Create central live screen display
-        JPanel liveScreenPanel = new JPanel(new BorderLayout());
-        liveScreenPanel.setBackground(new Color(0, 20, 0));
-        liveScreenPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(0, 100, 0), 2),
+        // Holographic-style welcome panel with 3D effect
+        JPanel welcomePanel = new JPanel(new GridLayout(3, 1, 15, 15));
+        welcomePanel.setBackground(new Color(0, 20, 40));
+        welcomePanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(0, 255, 255), 3),
             BorderFactory.createEmptyBorder(20, 20, 20, 20)
         ));
 
-        // Digital display content
-        JPanel displayContent = new JPanel(new GridLayout(4, 1, 10, 10));
-        displayContent.setBackground(new Color(0, 20, 0));
+        // Dynamic welcome message with user's name
+        String userName = currentAccount != null ? currentAccount.getAccountHolder() : "Guest";
+        JLabel welcomeLabel = new JLabel("WELCOME BACK,");
+        JLabel userLabel = new JLabel(userName.toUpperCase());
+        welcomeLabel.setFont(new Font("Consolas", Font.BOLD, 42));
+        userLabel.setFont(new Font("Consolas", Font.BOLD, 48));
+        welcomeLabel.setForeground(new Color(0, 255, 255));
+        userLabel.setForeground(new Color(255, 255, 255));
+        welcomeLabel.setHorizontalAlignment(JLabel.CENTER);
+        userLabel.setHorizontalAlignment(JLabel.CENTER);
 
-        // System status
-        JLabel statusLabel = new JLabel("SYSTEM STATUS: ONLINE");
-        statusLabel.setFont(new Font("Consolas", Font.BOLD, 18));
-        statusLabel.setForeground(new Color(0, 255, 0));
-        statusLabel.setHorizontalAlignment(JLabel.CENTER);
+        // Animated account info with LED effect
+        JLabel accountLabel = new JLabel(currentAccount != null ? 
+            String.format("ACCOUNT: %s", currentAccount.getAccountNumber()) : "");
+        accountLabel.setFont(new Font("Consolas", Font.BOLD, 32));
+        accountLabel.setForeground(new Color(0, 255, 255));
+        accountLabel.setHorizontalAlignment(JLabel.CENTER);
 
-        // Bank information
-        JLabel bankInfoLabel = new JLabel("<html><center>BDA BANK<br>Your Trusted Financial Partner<br>24/7 Customer Service: 1-800-BDA-BANK</center></html>");
-        bankInfoLabel.setFont(new Font("Consolas", Font.BOLD, 16));
-        bankInfoLabel.setForeground(new Color(0, 255, 0));
-        bankInfoLabel.setHorizontalAlignment(JLabel.CENTER);
+        // Add glow effect to welcome message
+        Timer glowTimer = new Timer(1500, e -> {
+            float[] hsb = Color.RGBtoHSB(0, 255, 255, null);
+            userLabel.setForeground(Color.getHSBColor(hsb[0], hsb[1], 
+                (float) (0.7 + 0.3 * Math.sin(System.currentTimeMillis() / 500.0))));
+        });
+        glowTimer.start();
 
-        // Promotional message with blinking effect
-        JLabel promoLabel = new JLabel("SPECIAL OFFER: 5% CASHBACK ON ALL TRANSACTIONS");
-        promoLabel.setFont(new Font("Consolas", Font.BOLD, 16));
+        welcomePanel.add(welcomeLabel);
+        welcomePanel.add(userLabel);
+        welcomePanel.add(accountLabel);
+
+        // System status panel with real-time updates
+        JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 25, 10));
+        statusPanel.setBackground(new Color(0, 20, 40));
+
+        // Animated system status indicators
+        String[] statuses = {"SYSTEM", "NETWORK", "SECURITY"};
+        for (String status : statuses) {
+            JPanel indicator = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+            indicator.setBackground(new Color(0, 10, 20));
+            
+            JLabel statusDot = new JLabel("●");
+            statusDot.setFont(new Font("Dialog", Font.BOLD, 24));
+            statusDot.setForeground(new Color(0, 255, 0));
+            
+            JLabel statusLabel = new JLabel(status + ": ONLINE");
+            statusLabel.setFont(new Font("Consolas", Font.BOLD, 20));
+            statusLabel.setForeground(new Color(0, 255, 255));
+            
+            // Add blinking effect to status dots
+            Timer blinkTimer = new Timer(2000, e -> {
+                statusDot.setForeground(new Color(0, 255, 0));
+                new Timer(100, e2 -> {
+                    statusDot.setForeground(new Color(0, 100, 0));
+                }).start();
+            });
+            blinkTimer.start();
+            
+            indicator.add(statusDot);
+            indicator.add(statusLabel);
+            statusPanel.add(indicator);
+        }
+
+        // News ticker with modern styling
+        JPanel tickerPanel = new JPanel(new BorderLayout());
+        tickerPanel.setBackground(new Color(0, 20, 40));
+        tickerPanel.setBorder(BorderFactory.createLineBorder(new Color(0, 100, 255), 1));
+        
+        JLabel tickerLabel = new JLabel("Welcome to BDA Bank • Your Trusted Banking Partner • Experience the Future of Banking •");
+        tickerLabel.setFont(new Font("Consolas", Font.PLAIN, 16));
+        tickerLabel.setForeground(new Color(0, 200, 255));
+        
+        Timer scrollTimer = new Timer(50, e -> {
+            String text = tickerLabel.getText();
+            tickerLabel.setText(text.substring(1) + text.charAt(0));
+        });
+        scrollTimer.start();
+        
+        tickerPanel.add(tickerLabel, BorderLayout.CENTER);
+
+        // Combine all panels
+        JPanel centerPanel = new JPanel(new GridLayout(3, 1, 10, 10));
+        centerPanel.setBackground(new Color(0, 10, 20));
+        centerPanel.add(welcomePanel);
+        centerPanel.add(statusPanel);
+        centerPanel.add(tickerPanel);
+
+        topPanel.add(centerPanel, BorderLayout.CENTER);
+        topPanel.add(clockPanel, BorderLayout.EAST);
+
+        // Main options panel with holographic display effect
+        JPanel mainOptionsPanel = new JPanel(new BorderLayout());
+        mainOptionsPanel.setBackground(new Color(0, 15, 30));
+        mainOptionsPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(0, 150, 255), 2),
+            BorderFactory.createEmptyBorder(10, 50, 10, 50)
+        ));
+
+        // Create futuristic live screen display with holographic effect
+        JPanel liveScreenPanel = new JPanel(new BorderLayout());
+        liveScreenPanel.setBackground(new Color(0, 10, 30));
+        liveScreenPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(0, 200, 255), 3),
+            BorderFactory.createEmptyBorder(25, 25, 25, 25)
+        ));
+
+        // Add outer glow effect
+        liveScreenPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(0, 150, 255, 100), 5),
+            BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(0, 100, 255, 50), 3),
+                BorderFactory.createEmptyBorder(20, 20, 20, 20)
+            )
+        ));
+
+        // Holographic display content with modern grid layout and scanline effect
+        final JPanel displayContent = new JPanel(new GridLayout(5, 1, 20, 20)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.1f));
+                
+                int y = (int) (System.currentTimeMillis() / 50 % getHeight());
+                g2d.setColor(new Color(0, 255, 255, 30));
+                g2d.fillRect(0, y, getWidth(), 2);
+            }
+        };
+        displayContent.setBackground(new Color(0, 15, 35));
+        displayContent.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(0, 200, 255, 150), 2),
+            BorderFactory.createEmptyBorder(20, 20, 20, 20)
+        ));
+        
+        // Add scanline effect timer
+        Timer scanlineTimer = new Timer(50, e -> displayContent.repaint());
+        scanlineTimer.start();
+
+        // Dynamic balance display with advanced holographic effect
+        JPanel balancePanel = new JPanel(new BorderLayout(10, 10));
+        balancePanel.setBackground(new Color(0, 15, 35));
+        balancePanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(0, 200, 255, 180), 2),
+            BorderFactory.createEmptyBorder(15, 15, 15, 15)
+        ));
+
+        // Create a layered balance display
+        JPanel balanceDisplay = new JPanel(new BorderLayout(5, 10));
+        balanceDisplay.setBackground(new Color(0, 20, 40));
+        balanceDisplay.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(0, 255, 255, 100), 2),
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
+
+        JLabel balanceTitle = new JLabel("AVAILABLE BALANCE");
+        balanceTitle.setFont(new Font("Consolas", Font.BOLD, 36));
+        balanceTitle.setForeground(new Color(0, 255, 0));
+        balanceTitle.setHorizontalAlignment(JLabel.CENTER);
+        balanceTitle.setBorder(BorderFactory.createEmptyBorder(15, 0, 15, 0));
+        
+        // Create LED-style balance amount display with enhanced visibility and glow effect
+        JLabel balanceAmount = new JLabel(String.format("₱%.2f", 
+            currentAccount != null ? currentAccount.getBalance() : 0.0));
+        balanceAmount.setFont(new Font("Consolas", Font.BOLD, 72)); // Increased font size
+        balanceAmount.setForeground(new Color(0, 255, 0));
+        balanceAmount.setHorizontalAlignment(JLabel.CENTER);
+        balanceAmount.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createEmptyBorder(30, 0, 30, 0),
+            BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(0, 200, 0, 128), 4),
+                BorderFactory.createEmptyBorder(10, 20, 10, 20)
+            )
+        ));
+        
+        // Add dynamic glow effect with enhanced visibility and pulsing background
+        Timer balanceEffectTimer = new Timer(50, e -> {
+            long time = System.currentTimeMillis();
+            float pulse = (float) (0.9 + 0.1 * Math.sin(time / 800.0));
+            balanceAmount.setForeground(new Color(0, (int)(255 * pulse), 0));
+            Frame glowPanel = null;
+            glowPanel.setBackground(new Color(0, (int)(40 * pulse), 0));
+            
+            // Update balance in real-time with full precision
+            if (currentAccount != null) {
+                balanceAmount.setText(String.format("₱%.2f", currentAccount.getBalance()));
+            }
+        });
+        balanceEffectTimer.start();
+
+        // Add enhanced visibility with multi-layer glow effect
+        JPanel glowPanel = new JPanel(new BorderLayout());
+        glowPanel.setBackground(new Color(0, 40, 0));
+        glowPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(0, 255, 0, 50), 5),
+            BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(0, 200, 0, 100), 3),
+                BorderFactory.createEmptyBorder(15, 25, 15, 25)
+            )
+        ));
+        glowPanel.add(balanceAmount, BorderLayout.CENTER);
+
+        
+        balancePanel.add(balanceTitle, BorderLayout.NORTH);
+        balancePanel.add(glowPanel, BorderLayout.CENTER);
+        balancePanel.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+
+        // Interactive bank information display
+        JPanel bankInfoPanel = new JPanel(new BorderLayout(10, 10));
+        bankInfoPanel.setBackground(new Color(0, 20, 40));
+        bankInfoPanel.setBorder(BorderFactory.createLineBorder(new Color(0, 150, 255, 128), 1));
+        
+        JLabel bankLogo = new JLabel("BDA BANK");
+        bankLogo.setFont(new Font("Consolas", Font.BOLD, 28));
+        bankLogo.setForeground(new Color(0, 200, 255));
+        bankLogo.setHorizontalAlignment(JLabel.CENTER);
+        
+        JLabel bankSlogan = new JLabel("<html><center>FUTURE OF BANKING<br>24/7 Support: 1-800-BDA-BANK</center></html>");
+        bankSlogan.setFont(new Font("Consolas", Font.BOLD, 16));
+        bankSlogan.setForeground(new Color(0, 180, 255));
+        bankSlogan.setHorizontalAlignment(JLabel.CENTER);
+        
+        bankInfoPanel.add(bankLogo, BorderLayout.NORTH);
+        bankInfoPanel.add(bankSlogan, BorderLayout.CENTER);
+
+        // Dynamic promotional display with particle effect
+        JPanel promoPanel = new JPanel(new BorderLayout());
+        promoPanel.setBackground(new Color(0, 20, 40));
+        promoPanel.setBorder(BorderFactory.createLineBorder(new Color(0, 150, 255, 128), 1));
+        
+        JLabel promoLabel = new JLabel("✧ SPECIAL OFFER: 5% CASHBACK ON ALL TRANSACTIONS ✧");
+        promoLabel.setFont(new Font("Consolas", Font.BOLD, 18));
         promoLabel.setForeground(new Color(255, 215, 0));
         promoLabel.setHorizontalAlignment(JLabel.CENTER);
-
-        Timer blinkTimer = new Timer(1000, e -> {
-            promoLabel.setVisible(!promoLabel.isVisible());
+        
+        // Add shimmer effect to promo
+        Timer promoTimer = new Timer(100, e -> {
+            String text = promoLabel.getText();
+            if (text.startsWith("✧")) {
+                promoLabel.setText("✦" + text.substring(1, text.length() - 1) + "✦");
+            } else {
+                promoLabel.setText("✧" + text.substring(1, text.length() - 1) + "✧");
+            }
         });
-        blinkTimer.start();
+        promoTimer.start();
+        
+        promoPanel.add(promoLabel, BorderLayout.CENTER);
 
-        // Security reminder
-        JLabel securityLabel = new JLabel("<html><center>SECURITY REMINDER<br>Never share your PIN with anyone</center></html>");
-        securityLabel.setFont(new Font("Consolas", Font.BOLD, 16));
-        securityLabel.setForeground(new Color(255, 69, 0));
-        securityLabel.setHorizontalAlignment(JLabel.CENTER);
+        // Security status display with dynamic indicators
+        JPanel securityPanel = new JPanel(new BorderLayout());
+        securityPanel.setBackground(new Color(0, 20, 40));
+        securityPanel.setBorder(BorderFactory.createLineBorder(new Color(0, 150, 255, 128), 1));
+        
+        JLabel securityIcon = new JLabel("🔒");
+        securityIcon.setFont(new Font("Dialog", Font.PLAIN, 24));
+        securityIcon.setForeground(new Color(0, 255, 0));
+        securityIcon.setHorizontalAlignment(JLabel.CENTER);
+        
+        JLabel securityMsg = new JLabel("<html><center>SECURE TRANSACTION ENVIRONMENT<br>Enhanced with Advanced Encryption</center></html>");
+        securityMsg.setFont(new Font("Consolas", Font.BOLD, 16));
+        securityMsg.setForeground(new Color(0, 255, 128));
+        securityMsg.setHorizontalAlignment(JLabel.CENTER);
+        
+        securityPanel.add(securityIcon, BorderLayout.WEST);
+        securityPanel.add(securityMsg, BorderLayout.CENTER);
 
-        // Add components to display content
-        displayContent.add(statusLabel);
-        displayContent.add(bankInfoLabel);
-        displayContent.add(promoLabel);
-        displayContent.add(securityLabel);
+        // Add all components to display content with spacing
+        displayContent.add(balancePanel);
+        displayContent.add(bankInfoPanel);
+        displayContent.add(promoPanel);
+        displayContent.add(securityPanel);
 
         liveScreenPanel.add(displayContent, BorderLayout.CENTER);
         mainOptionsPanel.add(liveScreenPanel, BorderLayout.CENTER);
@@ -746,14 +960,74 @@ public class ATMInterface extends JFrame {
 
     private JButton createTransactionButton(String text) {
         JButton button = new JButton(text.replace("\n", "<br>"));
-        button.setBackground(new Color(40, 40, 40));
-        button.setForeground(new Color(0, 255, 0));
-        button.setFont(new Font("Consolas", Font.BOLD, 20));
-        button.setHorizontalAlignment(SwingConstants.CENTER);
+        button.setPreferredSize(new Dimension(300, 100)); // Increased button size
+        button.setBackground(new Color(20, 30, 40));
+        button.setForeground(new Color(0, 255, 255));
+        button.setFont(new Font("Consolas", Font.BOLD, 24)); // Larger font
         button.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(0, 255, 0), 2),
-            BorderFactory.createEmptyBorder(15, 25, 15, 25)
+            BorderFactory.createLineBorder(new Color(0, 150, 255, 180), 3),
+            BorderFactory.createEmptyBorder(20, 30, 20, 30)
         ));
+        
+        // Add enhanced hover effect with glow
+        button.addMouseListener(new MouseAdapter() {
+            private Timer glowTimer;
+            
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                button.setBackground(new Color(30, 40, 60));
+                button.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(0, 200, 255), 4),
+                    BorderFactory.createEmptyBorder(20, 30, 20, 30)
+                ));
+                
+                // Start intense glow effect on hover
+                glowTimer = new Timer(50, evt -> {
+                    float phase = (float) ((System.currentTimeMillis() % 2000) / 2000.0 * 2 * Math.PI);
+                    float glow = (float) (0.7 + 0.3 * Math.sin(phase));
+                    button.setForeground(new Color(0, (int)(255 * glow), (int)(255 * glow)));
+                });
+                glowTimer.start();
+            }
+            
+            @Override
+            public void mouseExited(MouseEvent e) {
+                button.setBackground(new Color(20, 30, 40));
+                button.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(0, 150, 255, 180), 3),
+                    BorderFactory.createEmptyBorder(20, 30, 20, 30)
+                ));
+                if (glowTimer != null) {
+                    glowTimer.stop();
+                }
+                button.setForeground(new Color(0, 255, 255));
+            }
+            
+            @Override
+            public void mousePressed(MouseEvent e) {
+                button.setBackground(new Color(40, 50, 70));
+                playSound("button");
+            }
+            
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                button.setBackground(new Color(30, 40, 60));
+            }
+        });
+        
+        // Add ambient glow effect
+        Timer ambientGlowTimer = new Timer(100, evt -> {
+            float ambient = (float) (0.8 + 0.2 * Math.sin(System.currentTimeMillis() / 2000.0));
+            button.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(0, (int)(150 * ambient), (int)(255 * ambient), 180), 3),
+                BorderFactory.createEmptyBorder(20, 30, 20, 30)
+            ));
+        });
+        ambientGlowTimer.start();
+        
+        button.setHorizontalAlignment(SwingConstants.CENTER);
+        button.setFocusPainted(false); // Remove focus border for cleaner look
+        
         button.setContentAreaFilled(true);
         button.setFocusPainted(false);
         button.setPreferredSize(new Dimension(250, 80));
@@ -794,12 +1068,61 @@ public class ATMInterface extends JFrame {
     }
 
     private void handleTransaction(String option) {
+        if (currentAccount == null) {
+            showErrorScreen("Please login first!");
+            cardLayout.show(mainPanel, "login");
+            return;
+        }
+
         playSound("button");
         switch (option) {
             case "WITHDRAW" -> showWithdrawDialog();
             case "DEPOSIT" -> showDepositDialog();
             case "TRANSFER FUNDS" -> showTransferDialog();
-            case "CHECK BALANCE" -> checkBalance();
+            case "CHECK BALANCE" -> {
+                // Show loading animation
+                JDialog loadingDialog = new JDialog(this, "Loading", true);
+                loadingDialog.setLayout(new BorderLayout());
+                loadingDialog.setSize(300, 150);
+                loadingDialog.setLocationRelativeTo(this);
+                
+                JPanel loadingPanel = new JPanel(new BorderLayout(10, 10));
+                loadingPanel.setBackground(Color.BLACK);
+                loadingPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+                
+                JLabel loadingLabel = new JLabel("Checking Balance");
+                loadingLabel.setFont(new Font("Consolas", Font.BOLD, 18));
+                loadingLabel.setForeground(new Color(0, 255, 0));
+                loadingLabel.setHorizontalAlignment(JLabel.CENTER);
+                
+                JProgressBar progressBar = new JProgressBar();
+                progressBar.setIndeterminate(true);
+                progressBar.setBackground(Color.BLACK);
+                progressBar.setForeground(new Color(0, 255, 0));
+                
+                loadingPanel.add(loadingLabel, BorderLayout.NORTH);
+                loadingPanel.add(progressBar, BorderLayout.CENTER);
+                loadingDialog.add(loadingPanel);
+                
+                // Create timer to simulate loading and record transaction
+                Timer loadingTimer = new Timer(1500, e -> {
+                    loadingDialog.dispose();
+                    checkBalance();
+                    
+                    // Record balance check in transaction history
+                    currentAccount.addTransaction(new Transaction(
+                        "Balance Inquiry",
+                        0.0,
+                        currentAccount.getBalance(),
+                        "Balance checked at ATM"
+                    ));
+                    saveAccountToFile(currentAccount);
+                });
+                loadingTimer.setRepeats(false);
+                loadingTimer.start();
+                
+                loadingDialog.setVisible(true);
+            }
             case "TRANSACTION HISTORY" -> showMiniStatement();
             case "CHANGE PIN" -> showChangePinDialog();
             case "CANCEL", "EXIT" -> logout();
@@ -1162,7 +1485,103 @@ public class ATMInterface extends JFrame {
     }
 
     private void checkBalance() {
-        generateReceipt("BALANCE INQUIRY", 0.0);
+        // Create loading screen with futuristic design
+        JPanel loadingPanel = createATMScreen("BALANCE INQUIRY");
+        JPanel contentPanel = new JPanel(new GridBagLayout());
+        contentPanel.setBackground(Color.BLACK);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+
+        // Welcome message with glowing effect
+        JLabel welcomeLabel = new JLabel("Welcome, " + currentAccount.getAccountHolder());
+        welcomeLabel.setForeground(new Color(0, 255, 128));
+        welcomeLabel.setFont(new Font("Consolas", Font.BOLD, 24));
+        welcomeLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
+        // Modern processing message
+        JLabel processingLabel = new JLabel("SCANNING");
+        processingLabel.setForeground(new Color(0, 255, 255));
+        processingLabel.setFont(new Font("Consolas", Font.BOLD, 20));
+        processingLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
+        // Create glowing panel for progress
+        JPanel glowPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // Create glowing effect
+                int w = getWidth();
+                int h = getHeight();
+                GradientPaint gp = new GradientPaint(
+                    0, h/2, new Color(0, 255, 128, 50),
+                    w, h/2, new Color(0, 128, 255, 50));
+                g2d.setPaint(gp);
+                g2d.fillRect(0, 0, w, h);
+            }
+        };
+        glowPanel.setPreferredSize(new Dimension(300, 5));
+        glowPanel.setBackground(Color.BLACK);
+
+        // Modern progress bar
+        JProgressBar progressBar = new JProgressBar(0, 100);
+        progressBar.setStringPainted(true);
+        progressBar.setForeground(new Color(0, 255, 128));
+        progressBar.setBackground(new Color(0, 20, 20));
+        progressBar.setBorder(BorderFactory.createLineBorder(new Color(0, 255, 255)));
+        progressBar.setFont(new Font("Consolas", Font.BOLD, 16));
+
+        // Layout components
+        gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.gridy = 0; contentPanel.add(welcomeLabel, gbc);
+        gbc.gridy = 1; contentPanel.add(processingLabel, gbc);
+        gbc.gridy = 2; contentPanel.add(glowPanel, gbc);
+        gbc.gridy = 3; contentPanel.add(progressBar, gbc);
+
+        loadingPanel.add(contentPanel, BorderLayout.CENTER);
+        mainPanel.add(loadingPanel, "loading");
+        cardLayout.show(mainPanel, "loading");
+
+        // Fast and smooth animation
+        Timer dotTimer = new Timer(200, null);
+        Timer progressTimer = new Timer(20, null);
+        
+        final int[] dots = {0};
+        final int[] progress = {0};
+        final float[] hue = {0f};
+
+        dotTimer.addActionListener(e -> {
+            dots[0] = (dots[0] + 1) % 4;
+            StringBuilder text = new StringBuilder("SCANNING");
+            for (int i = 0; i < dots[0]; i++) {
+                text.append(">");
+            }
+            processingLabel.setText(text.toString());
+            
+            // Cycle through colors
+            hue[0] = (hue[0] + 0.02f) % 1f;
+            processingLabel.setForeground(Color.getHSBColor(hue[0], 1f, 1f));
+        });
+
+        progressTimer.addActionListener(e -> {
+            progress[0] += 4;
+            progressBar.setValue(progress[0]);
+            progressBar.setString(progress[0] + "%");
+            glowPanel.repaint();
+            
+            if (progress[0] >= 100) {
+                progressTimer.stop();
+                dotTimer.stop();
+                // Show balance after loading completes
+                generateReceipt("BALANCE INQUIRY", 0.0);
+            }
+        });
+
+        dotTimer.start();
+        progressTimer.start();
     }
 
     private void showWithdrawDialog() {

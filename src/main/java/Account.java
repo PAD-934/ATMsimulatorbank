@@ -186,4 +186,9 @@ public class Account {
         Transaction transaction = new Transaction(type, amount, balanceAfter, description);
         transactionHistory.add(transaction);
     }
+
+    public void addTransaction(Transaction transaction) {
+        
+        throw new UnsupportedOperationException("Unimplemented method 'addTransaction'");
+    }
 }
