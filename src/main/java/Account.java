@@ -143,7 +143,7 @@ public class Account {
         loadingDialog.setLocationRelativeTo(null);
         
         // Create timer for animation
-        Timer timer = new Timer(50, e -> animationPanel.repaint());
+        Timer timer = new Timer(50, _ -> animationPanel.repaint());
         timer.start();
         
         // Show dialog for 2 seconds

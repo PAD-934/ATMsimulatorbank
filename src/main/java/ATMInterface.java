@@ -591,27 +591,63 @@ public class ATMInterface extends JFrame {
         JPanel menuPanel = new JPanel(new BorderLayout());
         menuPanel.setBackground(new Color(50, 50, 50));
 
-        // Top panel with welcome message and bank logo
+        // Top panel with welcome message, clock, and animations
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setBackground(Color.BLACK);
         topPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
+        // Create clock and date panel
+        JPanel clockPanel = new JPanel(new GridLayout(2, 1));
+        clockPanel.setBackground(Color.BLACK);
+        JLabel clockLabel = new JLabel();
+        JLabel dateLabel = new JLabel();
+        clockLabel.setFont(new Font("Consolas", Font.BOLD, 24));
+        dateLabel.setFont(new Font("Consolas", Font.BOLD, 18));
+        clockLabel.setForeground(new Color(0, 255, 0));
+        dateLabel.setForeground(new Color(0, 255, 0));
+        clockLabel.setHorizontalAlignment(JLabel.RIGHT);
+        dateLabel.setHorizontalAlignment(JLabel.RIGHT);
+        clockPanel.add(clockLabel);
+        clockPanel.add(dateLabel);
+
+        // Update clock every second
+        Timer clockTimer = new Timer(1000, e -> {
+            Calendar cal = Calendar.getInstance();
+            clockLabel.setText(String.format("%02d:%02d:%02d", 
+                cal.get(Calendar.HOUR_OF_DAY),
+                cal.get(Calendar.MINUTE),
+                cal.get(Calendar.SECOND)));
+            dateLabel.setText(String.format("%02d/%02d/%04d",
+                cal.get(Calendar.DAY_OF_MONTH),
+                cal.get(Calendar.MONTH) + 1,
+                cal.get(Calendar.YEAR)));
+        });
+        clockTimer.start();
+
+        // Welcome message with animation
         JLabel welcomeLabel = new JLabel("Choose a transaction");
-        welcomeLabel.setFont(new Font("Consolas", Font.BOLD, 28));
+        welcomeLabel.setFont(new Font("Consolas", Font.BOLD, 32));
         welcomeLabel.setForeground(Color.WHITE);
         welcomeLabel.setHorizontalAlignment(JLabel.CENTER);
 
-        JLabel subLabel = new JLabel("Press Cancel on the digital board to exit");
-        subLabel.setFont(new Font("Consolas", Font.PLAIN, 16));
-        subLabel.setForeground(new Color(200, 200, 200));
-        subLabel.setHorizontalAlignment(JLabel.CENTER);
+        // Scrolling message panel for bank announcements
+        JLabel scrollingMsg = new JLabel("Welcome to BDA Bank • Your Trusted Banking Partner • ");
+        scrollingMsg.setFont(new Font("Consolas", Font.PLAIN, 16));
+        scrollingMsg.setForeground(new Color(0, 255, 0));
+        
+        Timer scrollTimer = new Timer(100, e -> {
+            String text = scrollingMsg.getText();
+            scrollingMsg.setText(text.substring(1) + text.charAt(0));
+        });
+        scrollTimer.start();
 
-        JPanel labelPanel = new JPanel(new GridLayout(2, 1));
+        JPanel labelPanel = new JPanel(new GridLayout(3, 1, 5, 5));
         labelPanel.setBackground(Color.BLACK);
         labelPanel.add(welcomeLabel);
-        labelPanel.add(subLabel);
+        labelPanel.add(scrollingMsg);
 
         topPanel.add(labelPanel, BorderLayout.CENTER);
+        topPanel.add(clockPanel, BorderLayout.EAST);
 
         // Main options panel with side buttons
         JPanel mainOptionsPanel = new JPanel(new BorderLayout());
@@ -660,24 +696,48 @@ public class ATMInterface extends JFrame {
 
     private JButton createTransactionButton(String text) {
         JButton button = new JButton(text.replace("\n", "<br>"));
-        button.setBackground(Color.WHITE);
-        button.setForeground(new Color(25, 25, 112));
-        button.setFont(new Font("Consolas", Font.BOLD, 16));
-        button.setHorizontalAlignment(SwingConstants.LEFT);
+        button.setBackground(new Color(40, 40, 40));
+        button.setForeground(new Color(0, 255, 0));
+        button.setFont(new Font("Consolas", Font.BOLD, 20));
+        button.setHorizontalAlignment(SwingConstants.CENTER);
         button.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(100, 100, 100), 2),
-            BorderFactory.createEmptyBorder(10, 20, 10, 20)
+            BorderFactory.createLineBorder(new Color(0, 255, 0), 2),
+            BorderFactory.createEmptyBorder(15, 25, 15, 25)
         ));
         button.setContentAreaFilled(true);
         button.setFocusPainted(false);
-        button.setPreferredSize(new Dimension(200, 60));
-        button.setHorizontalTextPosition(SwingConstants.LEFT);
+        button.setPreferredSize(new Dimension(250, 80));
+        button.setHorizontalTextPosition(SwingConstants.CENTER);
         button.setVerticalTextPosition(SwingConstants.CENTER);
         button.setOpaque(true);
 
+        // Add hover effect
+        button.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent e) {
+                button.setBackground(new Color(60, 60, 60));
+                button.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(0, 255, 0), 3),
+                    BorderFactory.createEmptyBorder(14, 24, 14, 24)
+                ));
+            }
+            public void mouseExited(MouseEvent e) {
+                button.setBackground(new Color(40, 40, 40));
+                button.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(0, 255, 0), 2),
+                    BorderFactory.createEmptyBorder(15, 25, 15, 25)
+                ));
+            }
+            public void mousePressed(MouseEvent e) {
+                button.setBackground(new Color(30, 30, 30));
+            }
+            public void mouseReleased(MouseEvent e) {
+                button.setBackground(new Color(40, 40, 40));
+            }
+        });
+
         // HTML formatting for multi-line text
         if (text.contains("\n")) {
-            button.setText("<html>" + text.replace("\n", "<br>") + "</html>");
+            button.setText("<html><center>" + text.replace("\n", "<br>") + "</center></html>");
         }
 
         return button;
