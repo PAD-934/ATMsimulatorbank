@@ -649,10 +649,60 @@ public class ATMInterface extends JFrame {
         topPanel.add(labelPanel, BorderLayout.CENTER);
         topPanel.add(clockPanel, BorderLayout.EAST);
 
-        // Main options panel with side buttons
+        // Main options panel with side buttons and central display
         JPanel mainOptionsPanel = new JPanel(new BorderLayout());
         mainOptionsPanel.setBackground(Color.BLACK);
         mainOptionsPanel.setBorder(BorderFactory.createEmptyBorder(10, 50, 10, 50));
+
+        // Create central live screen display
+        JPanel liveScreenPanel = new JPanel(new BorderLayout());
+        liveScreenPanel.setBackground(new Color(0, 20, 0));
+        liveScreenPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(0, 100, 0), 2),
+            BorderFactory.createEmptyBorder(20, 20, 20, 20)
+        ));
+
+        // Digital display content
+        JPanel displayContent = new JPanel(new GridLayout(4, 1, 10, 10));
+        displayContent.setBackground(new Color(0, 20, 0));
+
+        // System status
+        JLabel statusLabel = new JLabel("SYSTEM STATUS: ONLINE");
+        statusLabel.setFont(new Font("Consolas", Font.BOLD, 18));
+        statusLabel.setForeground(new Color(0, 255, 0));
+        statusLabel.setHorizontalAlignment(JLabel.CENTER);
+
+        // Bank information
+        JLabel bankInfoLabel = new JLabel("<html><center>BDA BANK<br>Your Trusted Financial Partner<br>24/7 Customer Service: 1-800-BDA-BANK</center></html>");
+        bankInfoLabel.setFont(new Font("Consolas", Font.BOLD, 16));
+        bankInfoLabel.setForeground(new Color(0, 255, 0));
+        bankInfoLabel.setHorizontalAlignment(JLabel.CENTER);
+
+        // Promotional message with blinking effect
+        JLabel promoLabel = new JLabel("SPECIAL OFFER: 5% CASHBACK ON ALL TRANSACTIONS");
+        promoLabel.setFont(new Font("Consolas", Font.BOLD, 16));
+        promoLabel.setForeground(new Color(255, 215, 0));
+        promoLabel.setHorizontalAlignment(JLabel.CENTER);
+
+        Timer blinkTimer = new Timer(1000, e -> {
+            promoLabel.setVisible(!promoLabel.isVisible());
+        });
+        blinkTimer.start();
+
+        // Security reminder
+        JLabel securityLabel = new JLabel("<html><center>SECURITY REMINDER<br>Never share your PIN with anyone</center></html>");
+        securityLabel.setFont(new Font("Consolas", Font.BOLD, 16));
+        securityLabel.setForeground(new Color(255, 69, 0));
+        securityLabel.setHorizontalAlignment(JLabel.CENTER);
+
+        // Add components to display content
+        displayContent.add(statusLabel);
+        displayContent.add(bankInfoLabel);
+        displayContent.add(promoLabel);
+        displayContent.add(securityLabel);
+
+        liveScreenPanel.add(displayContent, BorderLayout.CENTER);
+        mainOptionsPanel.add(liveScreenPanel, BorderLayout.CENTER);
 
         // Left side buttons
         JPanel leftButtons = new JPanel(new GridLayout(4, 1, 15, 15));
