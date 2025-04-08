@@ -164,9 +164,17 @@ public class ATMInterface extends JFrame {
         
         JButton loginButton = createATMButton("LOGIN", new Color(0, 100, 0));
         JButton signUpButton = createATMButton("NEW ACCOUNT", new Color(0, 0, 100));
+        JButton adminButton = createATMButton("ADMIN", new Color(139, 0, 0));
 
         rightButtonsPanel.add(loginButton);
         rightButtonsPanel.add(signUpButton);
+        rightButtonsPanel.add(adminButton);
+
+        // Add admin button action listener
+        adminButton.addActionListener(_ -> {
+            AdminInterface adminInterface = new AdminInterface(accounts);
+            adminInterface.setVisible(true);
+        });
 
         // Keypad panel (bottom)
         JPanel keypadPanel = createKeypad();
@@ -309,9 +317,10 @@ public class ATMInterface extends JFrame {
         JPanel signUpPanel = new JPanel(new BorderLayout());
         signUpPanel.setBackground(new Color(200, 200, 200));
 
-        // Create ATM screen panel
+        // Create ATM screen panel with fixed dimensions
         JPanel screenPanel = new JPanel(new GridBagLayout());
         screenPanel.setBackground(Color.BLACK);
+        screenPanel.setPreferredSize(new Dimension(600, 400)); // Fixed screen size
         screenPanel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createBevelBorder(BevelBorder.RAISED, Color.GRAY, Color.DARK_GRAY),
             BorderFactory.createLineBorder(Color.BLACK, 10)
@@ -321,18 +330,34 @@ public class ATMInterface extends JFrame {
         gbc.insets = new Insets(10, 30, 10, 30);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Title
+        // Title and Instructions
+        JPanel titlePanel = new JPanel(new GridLayout(2, 1));
+        titlePanel.setBackground(Color.BLACK);
+
         JLabel titleLabel = new JLabel("CREATE NEW ACCOUNT");
         titleLabel.setFont(new Font("Consolas", Font.BOLD, 24));
         titleLabel.setForeground(Color.GREEN);
         titleLabel.setHorizontalAlignment(JLabel.CENTER);
 
-        // Input fields
+        JLabel instructionLabel = new JLabel("Please fill in all fields below");
+        instructionLabel.setFont(new Font("Consolas", Font.ITALIC, 14));
+        instructionLabel.setForeground(Color.YELLOW);
+        instructionLabel.setHorizontalAlignment(JLabel.CENTER);
+
+        titlePanel.add(titleLabel);
+        titlePanel.add(instructionLabel);
+
+        // Input fields with hints
         JTextField nameField = new JTextField(15);
+        nameField.setToolTipText("Enter your full legal name");
         JTextField accNumField = new JTextField(15);
+        accNumField.setToolTipText("Choose a unique account number");
         JPasswordField pinField = new JPasswordField(15);
+        pinField.setToolTipText("Choose a 4-digit PIN");
         JPasswordField confirmPinField = new JPasswordField(15);
+        confirmPinField.setToolTipText("Re-enter your PIN");
         JTextField initialDepositField = new JTextField(15);
+        initialDepositField.setToolTipText("Minimum ₱500");
 
         // Style all text fields
         styleTextField(nameField);
@@ -341,13 +366,13 @@ public class ATMInterface extends JFrame {
         styleTextField(confirmPinField);
         styleTextField(initialDepositField);
 
-        // Labels
+        // Labels with requirements
         JLabel[] labels = {
-            new JLabel("FULL NAME:"),
-            new JLabel("ACCOUNT NUMBER:"),
-            new JLabel("PIN:"),
+            new JLabel("FULL NAME: (Required)"),
+            new JLabel("ACCOUNT NUMBER: (Required)"),
+            new JLabel("PIN: (4 digits)"),
             new JLabel("CONFIRM PIN:"),
-            new JLabel("INITIAL DEPOSIT:")
+            new JLabel("INITIAL DEPOSIT: (Min. ₱500)")
         };
 
         // Style all labels
@@ -359,7 +384,7 @@ public class ATMInterface extends JFrame {
         // Add components to screen
         gbc.gridx = 0; gbc.gridy = 0;
         gbc.gridwidth = 2;
-        screenPanel.add(titleLabel, gbc);
+        screenPanel.add(titlePanel, gbc);
 
         JComponent[] fields = {nameField, accNumField, pinField, confirmPinField, initialDepositField};
         for (int i = 0; i < labels.length; i++) {
@@ -409,37 +434,69 @@ public class ATMInterface extends JFrame {
     }
 
     private void createAccount(String name, String accNum, String pin, String confirmPin, String initialDeposit) {
+        StringBuilder errorMessage = new StringBuilder();
+
+        // Validate all fields
         if (name.isEmpty() || accNum.isEmpty() || pin.isEmpty() || confirmPin.isEmpty() || initialDeposit.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "All fields are required!");
-            return;
+            errorMessage.append("All fields are required!\n");
+        }
+
+        // Validate name format
+        if (!name.isEmpty() && !name.matches("^[a-zA-Z\\s]+$")) {
+            errorMessage.append("Name should only contain letters and spaces\n");
+        }
+
+        // Validate account number format
+        if (!accNum.isEmpty() && !accNum.matches("^\\d{4,}$")) {
+            errorMessage.append("Account number should be at least 4 digits\n");
         }
 
         if (accounts.containsKey(accNum)) {
-            JOptionPane.showMessageDialog(this, "Account number already exists!");
-            return;
+            errorMessage.append("Account number already exists!\n");
+        }
+
+        // Validate PIN format
+        if (!pin.isEmpty() && !pin.matches("^\\d{4}$")) {
+            errorMessage.append("PIN must be exactly 4 digits\n");
         }
 
         if (!pin.equals(confirmPin)) {
-            JOptionPane.showMessageDialog(this, "PINs do not match!");
-            return;
+            errorMessage.append("PINs do not match!\n");
         }
 
         try {
             double deposit = Double.parseDouble(initialDeposit);
             if (deposit < 500) {
-                JOptionPane.showMessageDialog(this, "Initial deposit must be at least ₱500!");
+                errorMessage.append("Initial deposit must be at least ₱500!\n");
+            }
+
+            // If there are any validation errors, show them all at once
+            if (errorMessage.length() > 0) {
+                JOptionPane.showMessageDialog(this, errorMessage.toString(), "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
+            // Create account and save
             Account newAccount = new Account(accNum, pin, deposit, name);
             accounts.put(accNum, newAccount);
             saveAccountToFile(newAccount);
             
-            JOptionPane.showMessageDialog(this, "Account created successfully!");
+            // Show success message with account details
+            String successMessage = String.format(
+                "Account created successfully!\n\n" +
+                "Account Details:\n" +
+                "Name: %s\n" +
+                "Account Number: %s\n" +
+                "Initial Balance: ₱%.2f\n\n" +
+                "Please remember your account number and PIN for login.",
+                name, accNum, deposit
+            );
+            
+            JOptionPane.showMessageDialog(this, successMessage, "Account Created", JOptionPane.INFORMATION_MESSAGE);
             cardLayout.show(mainPanel, "login");
             
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Please enter a valid amount for initial deposit!");
+            JOptionPane.showMessageDialog(this, "Please enter a valid amount for initial deposit!", "Invalid Amount", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -532,48 +589,274 @@ public class ATMInterface extends JFrame {
 
     private void createMainMenuPanel() {
         JPanel menuPanel = new JPanel(new BorderLayout());
-        menuPanel.setBackground(new Color(200, 200, 200));
+        menuPanel.setBackground(new Color(50, 50, 50));
 
-        JLabel welcomeLabel = new JLabel("Welcome");
-        welcomeLabel.setFont(new Font("Consolas", Font.BOLD, 24));
-        welcomeLabel.setForeground(Color.GREEN);
+        // Top panel with welcome message and bank logo
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setBackground(Color.BLACK);
+        topPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        JLabel welcomeLabel = new JLabel("Choose a transaction");
+        welcomeLabel.setFont(new Font("Consolas", Font.BOLD, 28));
+        welcomeLabel.setForeground(Color.WHITE);
         welcomeLabel.setHorizontalAlignment(JLabel.CENTER);
-        welcomeLabel.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
 
-        JPanel optionsPanel = new JPanel(new GridLayout(3, 2, 10, 10));
-        optionsPanel.setBackground(Color.BLACK);
-        optionsPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        JLabel subLabel = new JLabel("Press Cancel on the digital board to exit");
+        subLabel.setFont(new Font("Consolas", Font.PLAIN, 16));
+        subLabel.setForeground(new Color(200, 200, 200));
+        subLabel.setHorizontalAlignment(JLabel.CENTER);
 
-        String[] options = {
-            "CHECK BALANCE",
-            "WITHDRAW",
-            "DEPOSIT",
-            "TRANSFER",
-            "CHANGE PIN",
-            "EXIT"
+        JPanel labelPanel = new JPanel(new GridLayout(2, 1));
+        labelPanel.setBackground(Color.BLACK);
+        labelPanel.add(welcomeLabel);
+        labelPanel.add(subLabel);
+
+        topPanel.add(labelPanel, BorderLayout.CENTER);
+
+        // Main options panel with side buttons
+        JPanel mainOptionsPanel = new JPanel(new BorderLayout());
+        mainOptionsPanel.setBackground(Color.BLACK);
+        mainOptionsPanel.setBorder(BorderFactory.createEmptyBorder(10, 50, 10, 50));
+
+        // Left side buttons
+        JPanel leftButtons = new JPanel(new GridLayout(4, 1, 15, 15));
+        leftButtons.setBackground(Color.BLACK);
+        leftButtons.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 20));
+
+        // Right side buttons
+        JPanel rightButtons = new JPanel(new GridLayout(4, 1, 15, 15));
+        rightButtons.setBackground(Color.BLACK);
+        rightButtons.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
+
+        // Transaction options - Core banking features
+        String[][] options = {
+            {"WITHDRAW", "DEPOSIT"},
+            {"TRANSFER FUNDS", "CHECK BALANCE"},
+            {"TRANSACTION HISTORY", "CHANGE PIN"},
+            {"CANCEL", "EXIT"}
         };
-        
-        for (String option : options) {
-            JButton button = createATMButton(option, new Color(0, 100, 0));
-            button.addActionListener(_ -> {
-                playSound("button");
-                switch (option) {
-                    case "CHECK BALANCE" -> checkBalance();
-                    case "WITHDRAW" -> showWithdrawDialog();
-                    case "DEPOSIT" -> showDepositDialog();
-                    case "TRANSFER" -> showTransferDialog();
-                    case "CHANGE PIN" -> showChangePinDialog();
-                    case "EXIT" -> logout();
-                }
-            });
-            optionsPanel.add(button);
+
+        for (String[] row : options) {
+            JButton leftBtn = createTransactionButton(row[0]);
+            JButton rightBtn = createTransactionButton(row[1]);
+
+            leftBtn.addActionListener(_ -> handleTransaction(row[0]));
+            rightBtn.addActionListener(_ -> handleTransaction(row[1]));
+
+            leftButtons.add(leftBtn);
+            rightButtons.add(rightBtn);
         }
 
-        menuPanel.add(welcomeLabel, BorderLayout.NORTH);
-        menuPanel.add(optionsPanel, BorderLayout.CENTER);
+        mainOptionsPanel.add(leftButtons, BorderLayout.WEST);
+        mainOptionsPanel.add(rightButtons, BorderLayout.EAST);
+
+        // Add all components to the main panel
+        menuPanel.add(topPanel, BorderLayout.NORTH);
+        menuPanel.add(mainOptionsPanel, BorderLayout.CENTER);
         menuPanel.add(createHardwarePanel(), BorderLayout.EAST);
+
         mainPanel.add(menuPanel, "mainMenu");
     }
+
+    private JButton createTransactionButton(String text) {
+        JButton button = new JButton(text.replace("\n", "<br>"));
+        button.setBackground(Color.WHITE);
+        button.setForeground(new Color(25, 25, 112));
+        button.setFont(new Font("Consolas", Font.BOLD, 16));
+        button.setHorizontalAlignment(SwingConstants.LEFT);
+        button.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(100, 100, 100), 2),
+            BorderFactory.createEmptyBorder(10, 20, 10, 20)
+        ));
+        button.setContentAreaFilled(true);
+        button.setFocusPainted(false);
+        button.setPreferredSize(new Dimension(200, 60));
+        button.setHorizontalTextPosition(SwingConstants.LEFT);
+        button.setVerticalTextPosition(SwingConstants.CENTER);
+        button.setOpaque(true);
+
+        // HTML formatting for multi-line text
+        if (text.contains("\n")) {
+            button.setText("<html>" + text.replace("\n", "<br>") + "</html>");
+        }
+
+        return button;
+    }
+
+    private void handleTransaction(String option) {
+        playSound("button");
+        switch (option) {
+            case "WITHDRAW" -> showWithdrawDialog();
+            case "DEPOSIT" -> showDepositDialog();
+            case "TRANSFER FUNDS" -> showTransferDialog();
+            case "CHECK BALANCE" -> checkBalance();
+            case "TRANSACTION HISTORY" -> showMiniStatement();
+            case "CHANGE PIN" -> showChangePinDialog();
+            case "CANCEL", "EXIT" -> logout();
+        }
+    }
+
+    private void showCashTransactionsMenu() {
+        JPanel cashPanel = createATMScreen("CASH TRANSACTIONS");
+        JPanel contentPanel = new JPanel(new GridLayout(3, 2, 20, 20));
+        contentPanel.setBackground(Color.BLACK);
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
+
+        String[] options = {"WITHDRAW", "DEPOSIT", "QUICK ₱1000", "QUICK ₱5000", "QUICK ₱10000", "BACK"};
+        
+        for (String option : options) {
+            JButton button = createTransactionButton(option);
+            button.addActionListener(_ -> {
+                switch (option) {
+                    case "WITHDRAW" -> showWithdrawDialog();
+                    case "DEPOSIT" -> showDepositDialog();
+                    case "QUICK ₱1000" -> processWithdrawal(1000);
+                    case "QUICK ₱5000" -> processWithdrawal(5000);
+                    case "QUICK ₱10000" -> processWithdrawal(10000);
+                    case "BACK" -> cardLayout.show(mainPanel, "mainMenu");
+                }
+            });
+            contentPanel.add(button);
+        }
+
+        cashPanel.add(contentPanel, BorderLayout.CENTER);
+        mainPanel.add(cashPanel, "cashTransactions");
+        cardLayout.show(mainPanel, "cashTransactions");
+    }
+
+    private void processWithdrawal(double amount) {
+        if (amount <= 0) {
+            showErrorScreen("Please enter a valid amount!");
+            return;
+        }
+        if (amount > currentAccount.getBalance()) {
+            showErrorScreen("Insufficient funds!");
+            return;
+        }
+        if (amount % 100 != 0) {
+            showErrorScreen("Amount must be in multiples of 100!");
+            return;
+        }
+        
+        // Process withdrawal
+        currentAccount.withdraw(amount);
+        saveAccountToFile(currentAccount);
+        playSound("cash");
+        
+        // Show success screen with receipt option
+        showReceiptOptionScreen("QUICK WITHDRAWAL", amount);
+    }
+
+    private void showOtherServicesMenu() {
+        JPanel servicesPanel = createATMScreen("OTHER SERVICES");
+        JPanel contentPanel = new JPanel(new GridLayout(2, 2, 20, 20));
+        contentPanel.setBackground(Color.BLACK);
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
+
+        String[] options = {"CHANGE PIN", "MINI STATEMENT", "BALANCE INQUIRY", "BACK"};
+        
+        for (String option : options) {
+            JButton button = createTransactionButton(option);
+            button.addActionListener(_ -> {
+                switch (option) {
+                    case "CHANGE PIN" -> showChangePinDialog();
+                    case "MINI STATEMENT" -> showMiniStatement();
+                    case "BALANCE INQUIRY" -> checkBalance();
+                    case "BACK" -> cardLayout.show(mainPanel, "mainMenu");
+                }
+            });
+            contentPanel.add(button);
+        }
+
+        servicesPanel.add(contentPanel, BorderLayout.CENTER);
+        mainPanel.add(servicesPanel, "otherServices");
+        cardLayout.show(mainPanel, "otherServices");
+    }
+
+    private void showMiniStatement() {
+        JPanel statementPanel = createATMScreen("MINI STATEMENT");
+        JPanel contentPanel = new JPanel(new BorderLayout());
+        contentPanel.setBackground(Color.BLACK);
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        // Create text area for transactions
+        JTextArea statementArea = new JTextArea();
+        statementArea.setBackground(Color.BLACK);
+        statementArea.setForeground(Color.GREEN);
+        statementArea.setFont(new Font("Consolas", Font.PLAIN, 14));
+        statementArea.setEditable(false);
+
+        // Add account details
+        StringBuilder sb = new StringBuilder();
+        sb.append("Account Number: ").append(currentAccount.getAccountNumber())
+          .append("\nAccount Holder: ").append(currentAccount.getAccountHolder())
+          .append("\nCurrent Balance: ₱").append(String.format("%,.2f", currentAccount.getBalance()))
+          .append("\n\nRecent Transactions:\n");
+
+        // Add recent transactions (last 5)
+        java.util.List<Transaction> transactions = currentAccount.getTransactionHistory();
+        int start = Math.max(0, transactions.size() - 5);
+        for (int i = start; i < transactions.size(); i++) {
+            sb.append("\n").append(transactions.get(i).toString());
+        }
+
+        statementArea.setText(sb.toString());
+
+        // Add scroll pane
+        JScrollPane scrollPane = new JScrollPane(statementArea);
+        scrollPane.setBorder(BorderFactory.createLineBorder(Color.GREEN));
+        contentPanel.add(scrollPane, BorderLayout.CENTER);
+
+        // Add back button
+        JButton backButton = createATMButton("BACK", new Color(139, 0, 0));
+        backButton.addActionListener(_ -> cardLayout.show(mainPanel, "mainMenu"));
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setBackground(Color.BLACK);
+        buttonPanel.add(backButton);
+        contentPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        statementPanel.add(contentPanel, BorderLayout.CENTER);
+        mainPanel.add(statementPanel, "miniStatement");
+        cardLayout.show(mainPanel, "miniStatement");
+        
+        // Play printer sound
+        playSound("printer");
+    }
+
+    private void showPaymentsMenu() {
+        JPanel paymentsPanel = createATMScreen("PAYMENTS");
+        JPanel contentPanel = new JPanel(new GridLayout(2, 2, 20, 20));
+        contentPanel.setBackground(Color.BLACK);
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
+
+        String[] options = {"UTILITY BILLS", "CREDIT CARD", "LOAN PAYMENT", "BACK"};
+        
+        for (String option : options) {
+            JButton button = createTransactionButton(option);
+            button.addActionListener(_ -> {
+                if (option.equals("BACK")) {
+                    cardLayout.show(mainPanel, "mainMenu");
+                } else {
+                    showMessage("Service Currently Unavailable", 
+                              option + " payment service is currently under maintenance.", 
+                              JOptionPane.INFORMATION_MESSAGE);
+                }
+            });
+            contentPanel.add(button);
+        }
+
+        paymentsPanel.add(contentPanel, BorderLayout.CENTER);
+        mainPanel.add(paymentsPanel, "payments");
+        cardLayout.show(mainPanel, "payments");
+    }
+
+    private void showMessage(String title, String message, int messageType) {
+        JOptionPane.showMessageDialog(this, message, title, messageType);
+    }
+
+
+    
 
     // Add new method for PIN change functionality
     private void showChangePinDialog() {

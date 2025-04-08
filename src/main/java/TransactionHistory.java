@@ -16,12 +16,14 @@ public class TransactionHistory {
         String type;
         double amount;
         long timestamp;
+        String description;
         
-        public Transaction(String accountNumber, String type, double amount, long timestamp) {
+        public Transaction(String accountNumber, String type, double amount, long timestamp, String description) {
             this.accountNumber = accountNumber;
             this.type = type;
             this.amount = amount;
             this.timestamp = timestamp;
+            this.description = description;
         }
         
         @Override
@@ -32,12 +34,12 @@ public class TransactionHistory {
         }
     }
     
-    public static void saveTransaction(String accountNumber, String type, double amount) {
+    public static void saveTransaction(String accountNumber, String type, double amount, String description) {
         try (FileWriter fw = new FileWriter(TRANSACTION_FILE, true);
              BufferedWriter bw = new BufferedWriter(fw);
              PrintWriter out = new PrintWriter(bw)) {
-            out.println(String.format("%s,%s,%.2f,%d", 
-                accountNumber, type, amount, System.currentTimeMillis()));
+            out.println(String.format("%s,%s,%.2f,%d,%s", 
+                accountNumber, type, amount, System.currentTimeMillis(), description));
         } catch (IOException e) {
             JOptionPane.showMessageDialog(null, 
                 "Error saving transaction: " + e.getMessage(), 
@@ -48,40 +50,89 @@ public class TransactionHistory {
     public static void showTransactionHistory(String accountNumber) {
         List<Transaction> transactions = getTransactions(accountNumber);
         
-        JFrame frame = new JFrame("Transaction History");
-        frame.setSize(500, 400);
-        frame.setLocationRelativeTo(null);
+        JDialog dialog = new JDialog((Frame)null, "Transaction History", true);
+        dialog.setSize(800, 600);
+        dialog.setLocationRelativeTo(null);
         
-        JPanel panel = new JPanel(new BorderLayout());
+        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
+        mainPanel.setBackground(new Color(50, 50, 50));
+        mainPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(30, 30, 30), 15),
+            BorderFactory.createEmptyBorder(20, 20, 20, 20)
+        ));
         
-        // Create table model
-        String[] columns = {"Date", "Type", "Amount"};
-        Object[][] data = new Object[transactions.size()][3];
+        // Create title panel
+        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        titlePanel.setBackground(new Color(30, 30, 30));
+        JLabel titleLabel = new JLabel("TRANSACTION HISTORY");
+        titleLabel.setFont(new Font("Consolas", Font.BOLD, 24));
+        titleLabel.setForeground(new Color(0, 255, 0));
+        titlePanel.add(titleLabel);
+        
+        // Create table model with ATM-style formatting
+        String[] columns = {"Date", "Type", "Amount", "Description"};
+        Object[][] data = new Object[transactions.size()][4];
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         
         for (int i = 0; i < transactions.size(); i++) {
             Transaction t = transactions.get(i);
             data[i][0] = sdf.format(new Date(t.timestamp));
             data[i][1] = t.type;
-            data[i][2] = String.format("$%.2f", t.amount);
+            data[i][2] = String.format("₱%.2f", t.amount);
+            data[i][3] = t.description;
         }
         
         JTable table = new JTable(data, columns);
-        JScrollPane scrollPane = new JScrollPane(table);
-        panel.add(scrollPane, BorderLayout.CENTER);
+        table.setBackground(Color.BLACK);
+        table.setForeground(new Color(0, 255, 0));
+        table.setFont(new Font("Consolas", Font.PLAIN, 14));
+        table.setGridColor(new Color(30, 30, 30));
+        table.getTableHeader().setBackground(new Color(30, 30, 30));
+        table.getTableHeader().setForeground(new Color(0, 255, 0));
+        table.getTableHeader().setFont(new Font("Consolas", Font.BOLD, 14));
         
-        // Add total balance
+        // Set column widths
+        table.getColumnModel().getColumn(0).setPreferredWidth(150);
+        table.getColumnModel().getColumn(1).setPreferredWidth(100);
+        table.getColumnModel().getColumn(2).setPreferredWidth(100);
+        table.getColumnModel().getColumn(3).setPreferredWidth(400);
+        
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.getViewport().setBackground(Color.BLACK);
+        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(30, 30, 30)));
+        
+        // Create summary panel
+        JPanel summaryPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        summaryPanel.setBackground(new Color(30, 30, 30));
+        
         double total = transactions.stream()
-            .mapToDouble(t -> t.type.startsWith("Withdrawal") || t.type.startsWith("Transfer to") 
+            .mapToDouble(t -> t.type.startsWith("WITHDRAWAL") || t.type.equals("TRANSFER_OUT") 
                 ? -t.amount : t.amount)
             .sum();
-        JLabel totalLabel = new JLabel(String.format("Total Balance: $%.2f", total));
-        totalLabel.setFont(new Font("Arial", Font.BOLD, 14));
-        totalLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        panel.add(totalLabel, BorderLayout.SOUTH);
+            
+        JLabel totalLabel = new JLabel(String.format("CURRENT BALANCE: ₱%.2f", total));
+        totalLabel.setFont(new Font("Consolas", Font.BOLD, 18));
+        totalLabel.setForeground(new Color(0, 255, 0));
+        summaryPanel.add(totalLabel);
         
-        frame.add(panel);
-        frame.setVisible(true);
+        // Add close button
+        JButton closeButton = new JButton("CLOSE");
+        closeButton.setFont(new Font("Consolas", Font.BOLD, 16));
+        closeButton.setBackground(new Color(139, 0, 0));
+        closeButton.setForeground(Color.WHITE);
+        closeButton.addActionListener(e -> dialog.dispose());
+        
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        buttonPanel.setBackground(new Color(50, 50, 50));
+        buttonPanel.add(closeButton);
+        
+        mainPanel.add(titlePanel, BorderLayout.NORTH);
+        mainPanel.add(scrollPane, BorderLayout.CENTER);
+        mainPanel.add(summaryPanel, BorderLayout.SOUTH);
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+        
+        dialog.add(mainPanel);
+        dialog.setVisible(true);
     }
     
     public static List<Transaction> getTransactions(String accountNumber) {
@@ -90,14 +141,20 @@ public class TransactionHistory {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] parts = line.split(",");
-                if (parts[0].equals(accountNumber)) {
+                if (parts[0].equals(accountNumber) && parts.length >= 5) {
                     transactions.add(new Transaction(
-                            parts[0], parts[1], Double.parseDouble(parts[2]), Long.parseLong(parts[3])));
+                            parts[0], parts[1], Double.parseDouble(parts[2]), 
+                            Long.parseLong(parts[3]), parts[4]));
                 }
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
         return transactions;
+    
+
+    // Remove duplicate method since there's already a saveTransaction implementation above
+    // This empty duplicate method can be deleted
+
     }
 }
