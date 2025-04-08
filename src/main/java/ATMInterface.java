@@ -21,7 +21,7 @@ public class ATMInterface extends JFrame {
         accounts = new HashMap<>();
         loadAccounts();
         
-        setTitle("ATM Simulation System");
+        setTitle("ATM Simulation Machine");
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setUndecorated(true);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -120,7 +120,7 @@ public class ATMInterface extends JFrame {
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         // Title with ATM-style font
-        JLabel titleLabel = new JLabel("Welcome to ATM System");
+        JLabel titleLabel = new JLabel("Welcome to BDA ATM Machine");
         titleLabel.setFont(new Font("Consolas", Font.BOLD, 24));
         titleLabel.setForeground(Color.GREEN);
         titleLabel.setHorizontalAlignment(JLabel.CENTER);
@@ -964,7 +964,7 @@ public class ATMInterface extends JFrame {
         gbc.anchor = GridBagConstraints.CENTER;
 
         // Receipt header
-        addReceiptLine(contentPanel, "XYZ BANK ATM", gbc, 20);
+        addReceiptLine(contentPanel, "Banco De AU(BDA) ATM Machine", gbc, 20);
         addReceiptLine(contentPanel, "------------------------", gbc, 16);
         addReceiptLine(contentPanel, "Date: " + java.time.LocalDateTime.now().format(
             java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), gbc, 14);
