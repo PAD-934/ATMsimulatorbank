@@ -918,15 +918,15 @@ public class ATMInterface extends JFrame {
         liveScreenPanel.add(displayContent, BorderLayout.CENTER);
         mainOptionsPanel.add(liveScreenPanel, BorderLayout.CENTER);
 
-        // Left side buttons
-        JPanel leftButtons = new JPanel(new GridLayout(4, 1, 15, 15));
+        // Left side buttons with enhanced size
+        JPanel leftButtons = new JPanel(new GridLayout(4, 1, 25, 25));
         leftButtons.setBackground(Color.BLACK);
-        leftButtons.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 20));
+        leftButtons.setBorder(BorderFactory.createEmptyBorder(30, 40, 30, 40));
 
-        // Right side buttons
-        JPanel rightButtons = new JPanel(new GridLayout(4, 1, 15, 15));
+        // Right side buttons with enhanced size
+        JPanel rightButtons = new JPanel(new GridLayout(4, 1, 25, 25));
         rightButtons.setBackground(Color.BLACK);
-        rightButtons.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
+        rightButtons.setBorder(BorderFactory.createEmptyBorder(30, 40, 30, 40));
 
         // Transaction options - Core banking features
         String[][] options = {
@@ -1389,6 +1389,27 @@ public class ATMInterface extends JFrame {
 
     private void generateReceipt(String transactionType, double amount) {
         JPanel receiptPanel = createATMScreen("TRANSACTION RECEIPT");
+        
+        // Create a button panel at the top
+        JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 20, 0));
+        buttonPanel.setBackground(Color.BLACK);
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        // Create larger buttons
+        JButton backButton = createATMButton("BACK", new Color(139, 0, 0));
+        JButton doneButton = createATMButton("DONE", new Color(0, 100, 0));
+        
+        // Set preferred size for larger buttons
+        Dimension buttonSize = new Dimension(200, 60);
+        backButton.setPreferredSize(buttonSize);
+        doneButton.setPreferredSize(buttonSize);
+        
+        buttonPanel.add(backButton);
+        buttonPanel.add(doneButton);
+        
+        // Add button panel to the top
+        receiptPanel.add(buttonPanel, BorderLayout.NORTH);
+        
         JPanel contentPanel = new JPanel(new GridBagLayout());
         contentPanel.setBackground(Color.BLACK);
         GridBagConstraints gbc = new GridBagConstraints();
@@ -1419,10 +1440,6 @@ public class ATMInterface extends JFrame {
         addReceiptLine(contentPanel, "Thank you for using our ATM", gbc, 14);
         addReceiptLine(contentPanel, "Please take your card", gbc, 14);
 
-        JButton doneButton = createATMButton("DONE", new Color(0, 100, 0));
-        gbc.insets = new Insets(20, 20, 10, 20);
-        contentPanel.add(doneButton, gbc);
-
         receiptPanel.add(contentPanel, BorderLayout.CENTER);
         mainPanel.add(receiptPanel, "receipt");
         cardLayout.show(mainPanel, "receipt");
@@ -1430,6 +1447,12 @@ public class ATMInterface extends JFrame {
         // Simulate printing sound
         playSound("printer");
 
+        // Add action listeners
+        backButton.addActionListener(_ -> {
+            playSound("button");
+            cardLayout.show(mainPanel, "mainMenu");
+        });
+        
         doneButton.addActionListener(_ -> {
             playSound("button");
             cardLayout.show(mainPanel, "mainMenu");
@@ -1799,16 +1822,18 @@ public class ATMInterface extends JFrame {
                     return;
                 }
 
-                // Process transfer
+                // Process transfer with sender and receiver details
                 Account recipientAccount = accounts.get(recipientAccNum);
-                currentAccount.withdraw(amount);
-                recipientAccount.deposit(amount);
+                String description = String.format("Transfer between %s and %s", 
+                    currentAccount.getAccountHolder(), recipientAccount.getAccountHolder());
+                currentAccount.transfer(amount, recipientAccount, description);
                 saveAccountToFile(currentAccount);
                 saveAccountToFile(recipientAccount);
                 playSound("card");
                 
-                // Show success screen with receipt option
-                showReceiptOptionScreen("TRANSFER", amount);
+                // Show success screen with receipt option and transfer details
+                showReceiptOptionScreen("TRANSFER", amount, 
+                    String.format("To: %s (%s)", recipientAccount.getAccountHolder(), recipientAccNum));
                 
             } catch (NumberFormatException ex) {
                 showErrorScreen("Please enter a valid amount!");
@@ -1816,6 +1841,138 @@ public class ATMInterface extends JFrame {
         });
 
         cancelButton.addActionListener(_ -> cardLayout.show(mainPanel, "mainMenu"));
+    }
+
+    private void showReceiptOptionScreen(String transactionType, double amount, String recipientInfo) {
+        JPanel receiptPanel = createATMScreen("TRANSACTION RECEIPT");
+        
+        // Create a button panel at the top
+        JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 20, 0));
+        buttonPanel.setBackground(Color.BLACK);
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        // Create larger buttons
+        JButton backButton = createATMButton("BACK", new Color(139, 0, 0));
+        JButton doneButton = createATMButton("DONE", new Color(0, 100, 0));
+        
+        // Set preferred size for larger buttons
+        Dimension buttonSize = new Dimension(200, 60);
+        backButton.setPreferredSize(buttonSize);
+        doneButton.setPreferredSize(buttonSize);
+        
+        buttonPanel.add(backButton);
+        buttonPanel.add(doneButton);
+        
+        // Add button panel to the top
+        receiptPanel.add(buttonPanel, BorderLayout.NORTH);
+        
+        JPanel contentPanel = new JPanel(new GridBagLayout());
+        contentPanel.setBackground(new Color(0, 10, 20));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 20, 10, 20);
+        gbc.anchor = GridBagConstraints.CENTER;
+        
+        // Header with holographic effect
+        JLabel headerLabel = new JLabel("BDA ATM MACHINE");
+        headerLabel.setFont(new Font("Consolas", Font.BOLD, 24));
+        headerLabel.setForeground(new Color(0, 255, 255));
+        gbc.gridy = GridBagConstraints.RELATIVE;
+        contentPanel.add(headerLabel, gbc);
+        
+        // Separator with LED effect
+        addReceiptLine(contentPanel, "═══════════════════════", gbc, 16);
+        
+        // Transaction timestamp with futuristic format
+        addReceiptLine(contentPanel, "DATE: " + java.time.LocalDateTime.now().format(
+            java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")), gbc, 14);
+        addReceiptLine(contentPanel, "═══════════════════════", gbc, 16);
+        
+        // Transaction details with neon glow
+        addReceiptLine(contentPanel, "TRANSACTION TYPE:", gbc, 16);
+        JLabel typeLabel = new JLabel(transactionType);
+        typeLabel.setFont(new Font("Consolas", Font.BOLD, 20));
+        typeLabel.setForeground(new Color(0, 255, 128));
+        contentPanel.add(typeLabel, gbc);
+        
+        addReceiptLine(contentPanel, "AMOUNT: ₱" + String.format("%,.2f", amount), gbc, 18);
+        
+        // Sender info with cyberpunk style
+        addReceiptLine(contentPanel, "FROM:", gbc, 16);
+        JLabel senderLabel = new JLabel(currentAccount.getAccountHolder());
+        senderLabel.setFont(new Font("Consolas", Font.BOLD, 18));
+        senderLabel.setForeground(new Color(255, 255, 0));
+        contentPanel.add(senderLabel, gbc);
+        
+        addReceiptLine(contentPanel, "ACC: ****" + 
+            currentAccount.getAccountNumber().substring(
+                Math.max(0, currentAccount.getAccountNumber().length() - 4)), gbc, 14);
+        
+        // Recipient info for transfers with matching style
+        if (recipientInfo != null) {
+            addReceiptLine(contentPanel, "TO:", gbc, 16);
+            JLabel recipientLabel = new JLabel(recipientInfo);
+            recipientLabel.setFont(new Font("Consolas", Font.BOLD, 18));
+            recipientLabel.setForeground(new Color(255, 255, 0));
+            contentPanel.add(recipientLabel, gbc);
+        }
+        
+        addReceiptLine(contentPanel, "═══════════════════════", gbc, 16);
+        addReceiptLine(contentPanel, "BALANCE: ₱" + String.format("%,.2f", currentAccount.getBalance()), gbc, 18);
+        addReceiptLine(contentPanel, "═══════════════════════", gbc, 16);
+        
+        // Footer with system status
+        addReceiptLine(contentPanel, "Transaction ID: " + generateTransactionId(), gbc, 14);
+        addReceiptLine(contentPanel, "Status: APPROVED", gbc, 14);
+        addReceiptLine(contentPanel, "Thank you for using BDA ATM", gbc, 14);
+
+        // Add action listeners
+        backButton.addActionListener(_ -> {
+            playSound("button");
+            cardLayout.show(mainPanel, "mainMenu");
+        });
+        
+        doneButton.addActionListener(_ -> {
+            playSound("button");
+            cardLayout.show(mainPanel, "mainMenu");
+        });
+
+doneButton = new JButton("DONE") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setColor(new Color(0, 255, 255));
+                int textX = (getWidth() - g2.getFontMetrics().stringWidth("DONE")) / 2;
+                int textY = (getHeight() + g2.getFontMetrics().getHeight()) / 2;
+                g2.drawString("DONE", textX, textY);
+            }
+        };
+        doneButton.setPreferredSize(new Dimension(200, 50));
+        doneButton.setContentAreaFilled(false);
+        doneButton.setBorderPainted(false);
+        doneButton.setFocusPainted(false);
+        doneButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        gbc.insets = new Insets(20, 20, 10, 20);
+        contentPanel.add(doneButton, gbc);
+
+        receiptPanel.add(contentPanel, BorderLayout.CENTER);
+        mainPanel.add(receiptPanel, "receipt");
+        cardLayout.show(mainPanel, "receipt");
+
+        // Simulate printing sound with LED animation
+        playSound("printer");
+
+        doneButton.addActionListener(_ -> {
+            playSound("button");
+            cardLayout.show(mainPanel, "mainMenu");
+        });
+    }
+
+    private String generateTransactionId() {
+        return String.format("%s%06d", 
+            java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd")),
+            (int)(Math.random() * 1000000));
     }
 
     private void showSuccessScreen(String message, String transactionType, double amount) {
