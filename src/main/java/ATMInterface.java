@@ -22,6 +22,7 @@ public class ATMInterface extends JFrame {
     private Timer splashTimer;
     private float glowIntensity = 0.0f;
     private boolean glowIncreasing = true;
+    @SuppressWarnings("unused")
     private JLabel cardSlotLabel;
     private JPanel cardPanel;
     private boolean cardInserted = false;
@@ -66,6 +67,7 @@ public class ATMInterface extends JFrame {
             public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
                     simulateCardEjection();
+                    @SuppressWarnings("unused")
                     Timer exitTimer = new Timer(1000, evt -> System.exit(0));
                     exitTimer.setRepeats(false);
                     exitTimer.start();
@@ -181,6 +183,7 @@ public class ATMInterface extends JFrame {
         splashScreen.setFocusable(true);
     }
     
+    @SuppressWarnings("unused")
     private void startSplashAnimation() {
         splashTimer = new Timer(50, e -> {
             if (glowIncreasing) {
@@ -402,6 +405,7 @@ public class ATMInterface extends JFrame {
         return hardwarePanel;
     }
 
+    @SuppressWarnings("unused")
     private void createLoginPanel() {
         // Create card animation components
         cardPanel = new JPanel() {
@@ -1250,6 +1254,7 @@ public class ATMInterface extends JFrame {
         }
     }
 
+    @SuppressWarnings({ "unused", "null" })
     private void createMainMenuPanel() {
         JPanel menuPanel = new JPanel(new BorderLayout());
         menuPanel.setBackground(new Color(20, 20, 30)); // Darker futuristic background
@@ -1705,6 +1710,7 @@ public class ATMInterface extends JFrame {
         return button;
     }
 
+    @SuppressWarnings("unused")
     private void handleTransaction(String option) {
         if (currentAccount == null) {
             showErrorScreen("Please login first!");
@@ -1767,6 +1773,7 @@ public class ATMInterface extends JFrame {
         }
     }
 
+    @SuppressWarnings("unused")
     private void showCashTransactionsMenu() {
         JPanel cashPanel = createATMScreen("CASH TRANSACTIONS");
         JPanel contentPanel = new JPanel(new GridLayout(3, 2, 20, 20));
@@ -1818,6 +1825,7 @@ public class ATMInterface extends JFrame {
         showReceiptOptionScreen("QUICK WITHDRAWAL", amount);
     }
 
+    @SuppressWarnings("unused")
     private void showOtherServicesMenu() {
         JPanel servicesPanel = createATMScreen("OTHER SERVICES");
         JPanel contentPanel = new JPanel(new GridLayout(2, 2, 20, 20));
@@ -1895,6 +1903,7 @@ public class ATMInterface extends JFrame {
         playSound("printer");
     }
 
+    @SuppressWarnings("unused")
     private void showPaymentsMenu() {
         JPanel paymentsPanel = createATMScreen("PAYMENTS");
         JPanel contentPanel = new JPanel(new GridLayout(2, 2, 20, 20));
@@ -2145,6 +2154,7 @@ public class ATMInterface extends JFrame {
         noButton.addActionListener(_ -> cardLayout.show(mainPanel, "mainMenu"));
     }
 
+    @SuppressWarnings("unused")
     private void checkBalance() {
         // Create loading screen with futuristic design
         JPanel loadingPanel = createATMScreen("BALANCE INQUIRY");
@@ -2245,6 +2255,7 @@ public class ATMInterface extends JFrame {
         progressTimer.start();
     }
 
+    @SuppressWarnings("unused")
     private void showWithdrawDialog() {
         JPanel withdrawPanel = createATMScreen("WITHDRAW");
         JPanel contentPanel = new JPanel(new BorderLayout(20, 20));
@@ -2399,7 +2410,7 @@ public class ATMInterface extends JFrame {
         withdrawPanel.add(contentPanel, BorderLayout.CENTER);
 
         // Add scanline animation
-        Timer scanlineTimer = new Timer(50, e -> displayPanel.repaint());
+        Timer scanlineTimer = new Timer(50, _ -> displayPanel.repaint());
         scanlineTimer.start();
 
         mainPanel.add(withdrawPanel, "withdraw");
@@ -2447,7 +2458,7 @@ public class ATMInterface extends JFrame {
                 processingDialog.add(processingPanel);
 
                 // Process withdrawal after brief animation
-                Timer processTimer = new Timer(1500, e -> {
+                Timer processTimer = new Timer(1500, _ -> {
                     processingDialog.dispose();
                     currentAccount.withdraw(amount);
                     saveAccountToFile(currentAccount);
@@ -2609,6 +2620,7 @@ public class ATMInterface extends JFrame {
         depositPanel.add(contentPanel, BorderLayout.CENTER);
 
         // Add scanline animation
+        @SuppressWarnings("unused")
         Timer scanlineTimer = new Timer(50, e -> displayPanel.repaint());
         scanlineTimer.start();
 
@@ -2837,7 +2849,7 @@ public class ATMInterface extends JFrame {
         transferPanel.add(contentPanel, BorderLayout.CENTER);
 
         // Add scanline animation
-        Timer scanlineTimer = new Timer(50, e -> displayPanel.repaint());
+        Timer scanlineTimer = new Timer(50, _ -> displayPanel.repaint());
         scanlineTimer.start();
 
         mainPanel.add(transferPanel, "transfer");

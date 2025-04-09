@@ -120,7 +120,7 @@ public class TransactionHistory {
         closeButton.setFont(new Font("Consolas", Font.BOLD, 16));
         closeButton.setBackground(new Color(139, 0, 0));
         closeButton.setForeground(Color.WHITE);
-        closeButton.addActionListener(e -> dialog.dispose());
+        closeButton.addActionListener(_ -> dialog.dispose());
         
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         buttonPanel.setBackground(new Color(50, 50, 50));

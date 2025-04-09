@@ -9,6 +9,7 @@ import java.util.List;
 public class AdminInterface extends JFrame {
     // Custom colors for futuristic theme
     private static final Color NEON_CYAN = new Color(0, 255, 255);
+    @SuppressWarnings("unused")
     private static final Color DARK_BG = new Color(20, 30, 40);
     private static final Color FIELD_BG = new Color(30, 40, 50);
     private static final Color BORDER_COLOR = new Color(0, 200, 255);
@@ -254,6 +255,7 @@ public class AdminInterface extends JFrame {
         mainPanel.add(loginPanel, "login");
     }
 
+    @SuppressWarnings("unused")
     private void createDashboardPanel() {
         JPanel dashboardPanel = new JPanel(new BorderLayout()) {
             @Override
@@ -479,6 +481,7 @@ public class AdminInterface extends JFrame {
         }
     }
 
+    @SuppressWarnings("unused")
     private void showCreateAccountDialog() {
         JDialog dialog = new JDialog(this, "Create New Account", true);
         dialog.setLayout(new GridBagLayout());
@@ -553,6 +556,7 @@ public class AdminInterface extends JFrame {
         dialog.setVisible(true);
     }
 
+    @SuppressWarnings("unused")
     private void showUpdateAccountDialog(Account account) {
         JDialog dialog = new JDialog(this, "Update Account", true);
         dialog.setLayout(new GridBagLayout());
