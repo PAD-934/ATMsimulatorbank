@@ -18,9 +18,20 @@ public class ATMInterface extends JFrame {
     private JPanel mainPanel;
     private CardLayout cardLayout;
 
+    private JPanel splashScreen;
+    private Timer splashTimer;
+    private float glowIntensity = 0.0f;
+    private boolean glowIncreasing = true;
+    private JLabel cardSlotLabel;
+    private JPanel cardPanel;
+    private boolean cardInserted = false;
+    
     public ATMInterface() {
         accounts = new HashMap<>();
         loadAccounts();
+        
+        // Create splash screen first
+        createSplashScreen();
         
         setTitle("ATM Simulation Machine");
         setExtendedState(JFrame.MAXIMIZED_BOTH);
@@ -54,15 +65,302 @@ public class ATMInterface extends JFrame {
             @Override
             public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-                    System.exit(0);
+                    simulateCardEjection();
+                    Timer exitTimer = new Timer(1000, evt -> System.exit(0));
+                    exitTimer.setRepeats(false);
+                    exitTimer.start();
                 }
             }
         });
         setFocusable(true);
         
-        add(mainPanel);
+        setLayout(new CardLayout());
+        add("splash", splashScreen);
+        add("main", mainPanel);
         setVisible(true);
+        
+        // Request focus for splash screen and start animation
+        splashScreen.requestFocusInWindow();
+        startSplashAnimation();
     }
+    
+    private void createSplashScreen() {
+        splashScreen = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                
+                // Create futuristic background
+                GradientPaint gp = new GradientPaint(
+                    0, 0, new Color(0, 20, 40),
+                    getWidth(), getHeight(), new Color(0, 40, 80));
+                g2d.setPaint(gp);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+                
+                // Add grid effect
+                g2d.setColor(new Color(0, 100, 200, 30));
+                int gridSize = 50;
+                for (int i = 0; i < getWidth(); i += gridSize) {
+                    g2d.drawLine(i, 0, i, getHeight());
+                }
+                for (int i = 0; i < getHeight(); i += gridSize) {
+                    g2d.drawLine(0, i, getWidth(), i);
+                }
+            }
+        };
+        
+        // Create center panel for content
+        JPanel centerPanel = new JPanel(new GridBagLayout());
+        centerPanel.setOpaque(false);
+        
+        // Create glowing title
+        JLabel titleLabel = new JLabel("BDA ATM SYSTEM") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                
+                // Draw glow effect
+                float alpha = Math.min(1.0f, Math.max(0.2f, glowIntensity));
+                g2d.setColor(new Color(0, 1.0f, 1.0f, alpha * 0.5f));
+                Font glowFont = getFont().deriveFont(Font.BOLD, 48);
+                g2d.setFont(glowFont);
+                
+                // Multiple layers for glow effect
+                for (int i = 0; i < 5; i++) {
+                    g2d.drawString(getText(), i, getHeight() / 2 + i);
+                }
+                
+                // Main text
+                g2d.setColor(new Color(0, 1.0f, 1.0f, 1.0f));
+                g2d.drawString(getText(), 0, getHeight() / 2);
+            }
+        };
+        titleLabel.setFont(new Font("Consolas", Font.BOLD, 48));
+        titleLabel.setForeground(new Color(0, 255, 255));
+        
+        // Create press to start text
+        JLabel pressStartLabel = new JLabel("PRESS ANY KEY TO START") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                
+                float alpha = Math.min(1.0f, Math.max(0.2f, glowIntensity));
+                g2d.setColor(new Color(0, 1.0f, 1.0f, alpha));
+                g2d.setFont(getFont());
+                g2d.drawString(getText(), 0, getHeight() / 2);
+            }
+        };
+        pressStartLabel.setFont(new Font("Consolas", Font.BOLD, 24));
+        
+        // Add components to center panel
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.insets = new Insets(0, 0, 50, 0);
+        centerPanel.add(titleLabel, gbc);
+        
+        gbc.gridy = 1;
+        centerPanel.add(pressStartLabel, gbc);
+        
+        splashScreen.add(centerPanel, BorderLayout.CENTER);
+        
+        // Add key listener for any key press
+        splashScreen.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (splashTimer != null && splashTimer.isRunning()) {
+                    splashTimer.stop();
+                }
+                transitionToLogin();
+            }
+        });
+        splashScreen.setFocusable(true);
+    }
+    
+    private void startSplashAnimation() {
+        splashTimer = new Timer(50, e -> {
+            if (glowIncreasing) {
+                glowIntensity += 0.05f;
+                if (glowIntensity >= 1.0f) {
+                    glowIntensity = 1.0f;
+                    glowIncreasing = false;
+                }
+            } else {
+                glowIntensity -= 0.05f;
+                if (glowIntensity <= 0.2f) {
+                    glowIntensity = 0.2f;
+                    glowIncreasing = true;
+                }
+            }
+            splashScreen.repaint();
+        });
+        splashTimer.start();
+    }
+    
+    private void transitionToLogin() {
+        // Fade out splash screen
+        Timer fadeTimer = new Timer(50, new ActionListener() {
+            float alpha = 1.0f;
+            
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                alpha -= 0.05f;
+                if (alpha <= 0) {
+                    ((Timer)e.getSource()).stop();
+                    CardLayout layout = (CardLayout)getContentPane().getLayout();
+                    layout.show(getContentPane(), "main");
+                    cardLayout.show(mainPanel, "login");
+                    mainPanel.requestFocusInWindow();
+                } else {
+                    splashScreen.setBackground(new Color(0, 0, 0, alpha));
+                }
+            }
+        });
+        fadeTimer.start();
+    }
+    
+    private void simulateCardInsertion() {
+        if (!cardInserted) {
+            cardInserted = true;
+            cardPanel.setVisible(true);
+            
+            // Get the LED indicator for card slot
+            JPanel cardSlotPanel = (JPanel)((JPanel)cardPanel.getParent()).getParent();
+            JPanel ledPanel = (JPanel)cardSlotPanel.getComponent(1);
+            
+            // Play card insertion sound
+            playSound("card");
+            
+            // Start insertion animation
+            Timer insertTimer = new Timer(20, new ActionListener() {
+                int steps = 0;
+                float progress = 0.0f;
+                
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    steps++;
+                    progress = Math.min(1.0f, steps / 25.0f);
+                    
+                    // Smooth easing function with bounce
+                    float easedProgress = (float)(1 - Math.pow(1 - progress, 4));
+                    float bounce = progress > 0.8f ? (float)(Math.sin(progress * Math.PI * 8) * 0.1) : 0;
+                    
+                    if (progress < 1.0f) {
+                        cardPanel.setBounds(
+                            cardPanel.getX(),
+                            cardPanel.getY() + (int)(3 * (1.0f - easedProgress + bounce)),
+                            cardPanel.getWidth(),
+                            cardPanel.getHeight()
+                        );
+                        
+                        // Update LED color during insertion with pulsing effect
+                        float pulse = (float)(Math.sin(progress * Math.PI * 4) * 0.3 + 0.7);
+                        ledPanel.setBackground(new Color(
+                            0,
+                            (int)(100 + 155 * easedProgress * pulse),
+                            0
+                        ));
+                    } else {
+                        ((Timer)e.getSource()).stop();
+                        
+                        // Flash LED when card is fully inserted
+                        Timer ledTimer = new Timer(100, new ActionListener() {
+                            int flashes = 0;
+                            boolean isOn = true;
+                            
+                            @Override
+                            public void actionPerformed(ActionEvent evt) {
+                                if (flashes < 3) {
+                                    ledPanel.setBackground(new Color(0, isOn ? 255 : 100, 0));
+                                    isOn = !isOn;
+                                    flashes++;
+                                } else {
+                                    ledPanel.setBackground(new Color(0, 255, 0));
+                                    ((Timer)evt.getSource()).stop();
+                                }
+                            }
+                        });
+                        ledTimer.start();
+                    }
+                }
+            });
+            insertTimer.start();
+        }
+    }
+    
+    private void simulateCardEjection() {
+        if (cardInserted) {
+            cardInserted = false;
+            
+            // Get the LED indicator for card slot
+            JPanel cardSlotPanel = (JPanel)((JPanel)cardPanel.getParent()).getParent();
+            JPanel ledPanel = (JPanel)cardSlotPanel.getComponent(1);
+            
+            // Start ejection animation
+            // Play card ejection sound
+            playSound("card");
+            
+            Timer ejectTimer = new Timer(20, new ActionListener() {
+                int steps = 0;
+                float progress = 0.0f;
+                
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    steps++;
+                    progress = Math.min(1.0f, steps / 25.0f);
+                    
+                    // Smooth easing function with spring effect
+                    float easedProgress = (float)(1 - Math.pow(1 - progress, 4));
+                    float spring = progress < 0.7f ? (float)(Math.sin(progress * Math.PI * 6) * 0.15) : 0;
+                    
+                    if (progress < 1.0f) {
+                        cardPanel.setBounds(
+                            cardPanel.getX(),
+                            cardPanel.getY() - (int)(3 * (easedProgress + spring)),
+                            cardPanel.getWidth(),
+                            cardPanel.getHeight()
+                        );
+                        
+                        // Update LED color during ejection with pulsing effect
+                        float pulse = (float)(Math.sin(progress * Math.PI * 3) * 0.3 + 0.7);
+                        ledPanel.setBackground(new Color(
+                            0,
+                            (int)(255 * (1.0f - easedProgress) * pulse),
+                            0
+                        ));
+                    } else {
+                        ((Timer)e.getSource()).stop();
+                        cardPanel.setVisible(false);
+                        
+                        // Reset LED to standby state with fade effect
+                        Timer ledTimer = new Timer(50, new ActionListener() {
+                            int steps = 0;
+                            
+                            @Override
+                            public void actionPerformed(ActionEvent evt) {
+                                steps++;
+                                float fadeProgress = Math.min(1.0f, steps / 10.0f);
+                                int green = (int)(255 * (1 - fadeProgress) + 100 * fadeProgress);
+                                ledPanel.setBackground(new Color(0, green, 0));
+                                
+                                if (fadeProgress >= 1.0f) {
+                                    ((Timer)evt.getSource()).stop();
+                                }
+                            }
+                        });
+                        ledTimer.start();
+                    }
+                }
+            });
+
+            ejectTimer.start();
+        }
+    }
+// Remove extra closing brace
 
     private JPanel createHardwarePanel() {
         JPanel hardwarePanel = new JPanel(new GridLayout(3, 1, 15, 15));
@@ -105,6 +403,96 @@ public class ATMInterface extends JFrame {
     }
 
     private void createLoginPanel() {
+        // Create card animation components
+        cardPanel = new JPanel() {
+            private float shine = 0.0f;
+            private boolean shineIncreasing = true;
+            private Timer shineTimer;
+            
+            {
+                shineTimer = new Timer(50, e -> {
+                    if (shineIncreasing) {
+                        shine += 0.1f;
+                        if (shine >= 1.0f) {
+                            shine = 1.0f;
+                            shineIncreasing = false;
+                        }
+                    } else {
+                        shine -= 0.1f;
+                        if (shine <= 0.0f) {
+                            shine = 0.0f;
+                            shineIncreasing = true;
+                        }
+                    }
+                    repaint();
+                });
+                shineTimer.start();
+            }
+            
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                
+                // Draw card base with metallic gradient
+                GradientPaint metallic = new GradientPaint(
+                    0, 0, new Color(60, 60, 60),
+                    getWidth(), getHeight(), new Color(40, 40, 40));
+                g2d.setPaint(metallic);
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                
+                // Add shine effect
+                if (shine > 0) {
+                    g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, shine * 0.3f));
+                    g2d.setPaint(new GradientPaint(
+                        0, 0, new Color(255, 255, 255, 100),
+                        getWidth(), 0, new Color(255, 255, 255, 0)));
+                    g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                    g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
+                }
+                
+                // Add chip with metallic effect
+                GradientPaint chipMetallic = new GradientPaint(
+                    10, 10, new Color(220, 200, 0),
+                    40, 35, new Color(180, 160, 0));
+                g2d.setPaint(chipMetallic);
+                g2d.fillRoundRect(10, 10, 30, 25, 5, 5);
+                
+                // Add chip details
+                g2d.setColor(new Color(160, 140, 0));
+                g2d.setStroke(new BasicStroke(0.5f));
+                for (int i = 0; i < 3; i++) {
+                    g2d.drawLine(15, 15 + i * 8, 35, 15 + i * 8);
+                }
+                
+                // Add hologram effect
+                float hologramAlpha = (float) Math.abs(Math.sin(shine * Math.PI));
+                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, hologramAlpha * 0.5f));
+                g2d.setColor(new Color(200, 200, 255));
+                g2d.fillOval(getWidth() - 25, 10, 15, 15);
+                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
+                
+                // Add magnetic stripe with gradient
+                GradientPaint stripePaint = new GradientPaint(
+                    0, getHeight() - 20, new Color(30, 30, 30),
+                    0, getHeight(), new Color(10, 10, 10));
+                g2d.setPaint(stripePaint);
+                g2d.fillRect(0, getHeight() - 20, getWidth(), 15);
+            }
+            
+            @Override
+            public void removeNotify() {
+                super.removeNotify();
+                if (shineTimer != null) {
+                    shineTimer.stop();
+                    shineTimer = null;
+                }
+            }
+        };
+        cardPanel.setPreferredSize(new Dimension(85, 54));
+        cardPanel.setVisible(false);
+        
         JPanel loginPanel = new JPanel(new BorderLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
@@ -221,6 +609,12 @@ public class ATMInterface extends JFrame {
         gbc.gridy = 4;
         screenPanel.add(pinField, gbc);
 
+        // Add card slot to hardware panel
+        JPanel hardwarePanel = createHardwarePanel();
+        cardSlotLabel = (JLabel) ((JPanel)hardwarePanel.getComponent(1)).getComponent(0);
+        JPanel cardSlotPanel = (JPanel)hardwarePanel.getComponent(1);
+        cardSlotPanel.add(cardPanel, BorderLayout.SOUTH);
+        
         // Side buttons panel (right)
         JPanel rightButtonsPanel = new JPanel(new GridLayout(4, 1, 10, 10));
         rightButtonsPanel.setBackground(new Color(200, 200, 200));
@@ -252,6 +646,7 @@ public class ATMInterface extends JFrame {
             String accNum = accField.getText();
             String pin = new String(pinField.getPassword());
             
+            simulateCardInsertion();
             if (validateLogin(accNum, pin)) {
                 currentAccount = accounts.get(accNum);
                 // Update welcome label in main menu
@@ -261,6 +656,7 @@ public class ATMInterface extends JFrame {
                 accField.setText("");
                 pinField.setText("");
             } else {
+                simulateCardEjection();
                 JOptionPane.showMessageDialog(loginPanel, 
                     "Invalid Account Number or PIN", 
                     "Login Error", 
@@ -2249,44 +2645,203 @@ public class ATMInterface extends JFrame {
     }
 
     private void showTransferDialog() {
-        JPanel transferPanel = createATMScreen("TRANSFER");
-        JPanel contentPanel = new JPanel(new GridBagLayout());
-        contentPanel.setBackground(Color.BLACK);
+        JPanel transferPanel = createATMScreen("TRANSFER FUNDS");
+        JPanel contentPanel = new JPanel(new BorderLayout(20, 20));
+        contentPanel.setBackground(new Color(0, 15, 30));
+        contentPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(0, 150, 255), 2),
+            BorderFactory.createEmptyBorder(30, 30, 30, 30)
+        ));
+
+        // Create holographic display panel with scanline effect
+        JPanel displayPanel = new JPanel(new BorderLayout(15, 15)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // Create holographic background effect
+                GradientPaint gp = new GradientPaint(
+                    0, 0, new Color(0, 30, 60),
+                    getWidth(), getHeight(), new Color(0, 15, 30));
+                g2d.setPaint(gp);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+
+                // Add scanline effect
+                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.1f));
+                int y = (int) (System.currentTimeMillis() / 50 % getHeight());
+                g2d.setColor(new Color(0, 255, 255, 30));
+                g2d.fillRect(0, y, getWidth(), 2);
+            }
+        };
+        displayPanel.setBackground(new Color(0, 15, 30));
+        displayPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(0, 200, 255), 2),
+            BorderFactory.createEmptyBorder(20, 20, 20, 20)
+        ));
+
+        // Create balance display with holographic effect
+        JPanel balancePanel = new JPanel(new BorderLayout(10, 10));
+        balancePanel.setOpaque(false);
+        balancePanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(0, 200, 255, 100), 2),
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
+
+        JLabel balanceLabel = new JLabel(String.format("Available Balance: ₱%,.2f", currentAccount.getBalance()));
+        balanceLabel.setFont(new Font("Consolas", Font.BOLD, 24));
+        balanceLabel.setForeground(new Color(0, 255, 255));
+        balanceLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
+        balancePanel.add(balanceLabel, BorderLayout.CENTER);
+
+        // Create input panel with modern styling
+        JPanel inputPanel = new JPanel(new GridBagLayout());
+        inputPanel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.insets = new Insets(15, 15, 15, 15);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Account number input
-        JLabel accountLabel = new JLabel("Enter Recipient Account Number:");
-        accountLabel.setForeground(Color.GREEN);
-        accountLabel.setFont(new Font("Consolas", Font.BOLD, 16));
+        // Enhanced account label with dynamic glow
+        JLabel accountLabel = new JLabel("RECIPIENT ACCOUNT NUMBER") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                
+                // Draw glow effect
+                g2d.setColor(new Color(0, 255, 255, 50));
+                g2d.setFont(getFont().deriveFont(Font.BOLD, 24));
+                for (int i = 0; i < 5; i++) {
+                    g2d.drawString(getText(), i, getHeight() / 2 + i);
+                }
+                
+                // Draw main text
+                g2d.setColor(new Color(0, 255, 255));
+                g2d.drawString(getText(), 0, getHeight() / 2);
+            }
+        };
+        accountLabel.setFont(new Font("Consolas", Font.BOLD, 24));
 
-        JTextField accountField = new JTextField(15);
-        styleTextField(accountField);
+        // Enhanced amount label with dynamic glow
+        JLabel amountLabel = new JLabel("TRANSFER AMOUNT") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                
+                // Draw glow effect
+                g2d.setColor(new Color(0, 255, 255, 50));
+                g2d.setFont(getFont().deriveFont(Font.BOLD, 24));
+                for (int i = 0; i < 5; i++) {
+                    g2d.drawString(getText(), i, getHeight() / 2 + i);
+                }
+                
+                // Draw main text
+                g2d.setColor(new Color(0, 255, 255));
+                g2d.drawString(getText(), 0, getHeight() / 2);
+            }
+        };
+        amountLabel.setFont(new Font("Consolas", Font.BOLD, 24));
 
-        // Amount input
-        JLabel amountLabel = new JLabel("Enter Amount to Transfer:");
-        amountLabel.setForeground(Color.GREEN);
-        amountLabel.setFont(new Font("Consolas", Font.BOLD, 16));
+        // Modern account input field with LED-style display
+        JTextField accountField = new JTextField(15) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        JTextField amountField = new JTextField(15);
-        styleTextField(amountField);
+                // Background
+                g2d.setColor(new Color(0, 20, 40));
+                g2d.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
 
-        // Buttons
-        JButton transferButton = createATMButton("TRANSFER", new Color(0, 100, 0));
-        JButton cancelButton = createATMButton("CANCEL", new Color(139, 0, 0));
+                // Border with glow
+                g2d.setColor(new Color(0, 200, 255));
+                g2d.setStroke(new BasicStroke(2f));
+                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
 
-        // Layout
+                // Draw text
+                g2d.setFont(new Font("Consolas", Font.BOLD, 36));
+                g2d.setColor(new Color(0, 255, 255));
+                String text = getText();
+                FontMetrics fm = g2d.getFontMetrics();
+                g2d.drawString(text, 10, ((getHeight() - fm.getHeight()) / 2) + fm.getAscent());
+            }
+        };
+        accountField.setPreferredSize(new Dimension(300, 60));
+        accountField.setOpaque(false);
+        accountField.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        accountField.setForeground(new Color(0, 255, 255));
+        accountField.setCaretColor(new Color(0, 255, 255));
+        accountField.setFont(new Font("Consolas", Font.BOLD, 36));
+
+        // Modern amount input field with LED-style display
+        JTextField amountField = new JTextField(15) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // Background
+                g2d.setColor(new Color(0, 20, 40));
+                g2d.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+
+                // Border with glow
+                g2d.setColor(new Color(0, 200, 255));
+                g2d.setStroke(new BasicStroke(2f));
+                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+
+                // Draw text with currency symbol
+                g2d.setFont(new Font("Consolas", Font.BOLD, 36));
+                g2d.setColor(new Color(0, 255, 255));
+                String text = getText().isEmpty() ? "₱0.00" : "₱" + getText();
+                FontMetrics fm = g2d.getFontMetrics();
+                g2d.drawString(text, 10, ((getHeight() - fm.getHeight()) / 2) + fm.getAscent());
+            }
+        };
+        amountField.setPreferredSize(new Dimension(300, 60));
+        amountField.setOpaque(false);
+        amountField.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        amountField.setForeground(new Color(0, 255, 255));
+        amountField.setCaretColor(new Color(0, 255, 255));
+        amountField.setFont(new Font("Consolas", Font.BOLD, 36));
+
+        // Action buttons with enhanced styling
+        JButton transferButton = createTransactionButton("TRANSFER");
+        transferButton.setBackground(new Color(0, 100, 0));
+        JButton cancelButton = createTransactionButton("CANCEL");
+        cancelButton.setBackground(new Color(139, 0, 0));
+
+        // Layout components
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setOpaque(false);
+        topPanel.add(balancePanel, BorderLayout.NORTH);
+
         gbc.gridwidth = 2;
-        gbc.gridy = 0; contentPanel.add(accountLabel, gbc);
-        gbc.gridy = 1; contentPanel.add(accountField, gbc);
-        gbc.gridy = 2; contentPanel.add(amountLabel, gbc);
-        gbc.gridy = 3; contentPanel.add(amountField, gbc);
-        
-        gbc.gridy = 4;
-        gbc.gridwidth = 1;
-        contentPanel.add(transferButton, gbc);
-        gbc.gridx = 1;
-        contentPanel.add(cancelButton, gbc);
+        gbc.gridy = 0; inputPanel.add(accountLabel, gbc);
+        gbc.gridy = 1; inputPanel.add(accountField, gbc);
+        gbc.gridy = 2; inputPanel.add(amountLabel, gbc);
+        gbc.gridy = 3; inputPanel.add(amountField, gbc);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        buttonPanel.setOpaque(false);
+        buttonPanel.add(transferButton);
+        buttonPanel.add(cancelButton);
+
+        displayPanel.add(topPanel, BorderLayout.NORTH);
+        displayPanel.add(inputPanel, BorderLayout.CENTER);
+        displayPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        contentPanel.add(displayPanel, BorderLayout.CENTER);
+        transferPanel.add(contentPanel, BorderLayout.CENTER);
+
+        // Add scanline animation
+        Timer scanlineTimer = new Timer(50, e -> displayPanel.repaint());
+        scanlineTimer.start();
+
+        mainPanel.add(transferPanel, "transfer");
+        cardLayout.show(mainPanel, "transfer");
 
         transferPanel.add(contentPanel, BorderLayout.CENTER);
         mainPanel.add(transferPanel, "transfer");
