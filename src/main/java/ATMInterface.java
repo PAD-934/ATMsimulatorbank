@@ -489,18 +489,42 @@ public class ATMInterface extends JFrame {
         return keypad;
     }
 
-    // Add this new method to update welcome label
+    // Update welcome labels in main menu panel with user's name
     private void updateWelcomeLabel() {
+        if (mainPanel == null || currentAccount == null) return;
+        
         JPanel menuPanel = (JPanel) mainPanel.getComponent(2); // Get main menu panel
-        Component[] components = menuPanel.getComponents();
-        for (Component c : components) {
-            if (c instanceof JLabel) {
-                JLabel label = (JLabel) c;
-                label.setText("Welcome, " + currentAccount.getAccountHolder());
-                break;
-            }
+        if (menuPanel instanceof JPanel) {
+            // Find the welcome panel in the center panel
+            Component[] components = menuPanel.getComponents();
+            for (Component c : components) {
+                if (c instanceof JPanel && ((JPanel) c).getLayout() instanceof BorderLayout) {
+                    Component[] centerComps = ((JPanel) c).getComponents();
+                    for (Component centerComp : centerComps) {
+                        if (centerComp instanceof JPanel && "welcomePanel".equals(centerComp.getName())) {
+                            Component[] welcomeComps = ((JPanel) centerComp).getComponents();
+                            for (Component welcomeComp : welcomeComps) {
+                                if (welcomeComp instanceof JLabel) {
+                                    JLabel label = (JLabel) welcomeComp;
+                                    if (label.getText().startsWith("WELCOME")) {
+                                        // Update welcome message
+                                        label.setText("WELCOME BACK,");
+                                    } else if (!label.getText().contains("ACCOUNT:")) {
+                                        // Update user name
+                                        label.setText(currentAccount.getAccountHolder().toUpperCase());
+                                        label.setForeground(new Color(255, 255, 255));
+                                    }
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
         }
     }
+            }
+// Remove extra closing brace
+// Remove extra closing brace
 
     private void createSignUpPanel() {
         JPanel signUpPanel = new JPanel(new BorderLayout()) {
@@ -882,6 +906,7 @@ public class ATMInterface extends JFrame {
 
         // Holographic-style welcome panel with 3D effect
         JPanel welcomePanel = new JPanel(new GridLayout(3, 1, 15, 15));
+        welcomePanel.setName("welcomePanel"); // Set name for component identification
         welcomePanel.setBackground(new Color(0, 20, 40));
         welcomePanel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(0, 255, 255), 3),
@@ -1203,19 +1228,17 @@ public class ATMInterface extends JFrame {
 
     private JButton createTransactionButton(String text) {
         JButton button = new JButton(text.replace("\n", "<br>"));
-        button.setPreferredSize(new Dimension(300, 100)); // Increased button size
+        button.setPreferredSize(new Dimension(300, 100));
         button.setBackground(new Color(20, 30, 40));
         button.setForeground(new Color(0, 255, 255));
-        button.setFont(new Font("Consolas", Font.BOLD, 24)); // Larger font
+        button.setFont(new Font("Consolas", Font.BOLD, 24));
         button.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(0, 150, 255, 180), 3),
+            BorderFactory.createLineBorder(new Color(0, 150, 255), 3),
             BorderFactory.createEmptyBorder(20, 30, 20, 30)
         ));
         
-        // Add enhanced hover effect with glow
+        // Add simple hover effect without animation
         button.addMouseListener(new MouseAdapter() {
-            private Timer glowTimer;
-            
             @Override
             public void mouseEntered(MouseEvent e) {
                 button.setBackground(new Color(30, 40, 60));
@@ -1223,27 +1246,15 @@ public class ATMInterface extends JFrame {
                     BorderFactory.createLineBorder(new Color(0, 200, 255), 4),
                     BorderFactory.createEmptyBorder(20, 30, 20, 30)
                 ));
-                
-                // Start intense glow effect on hover
-                glowTimer = new Timer(50, evt -> {
-                    float phase = (float) ((System.currentTimeMillis() % 2000) / 2000.0 * 2 * Math.PI);
-                    float glow = (float) (0.7 + 0.3 * Math.sin(phase));
-                    button.setForeground(new Color(0, (int)(255 * glow), (int)(255 * glow)));
-                });
-                glowTimer.start();
             }
             
             @Override
             public void mouseExited(MouseEvent e) {
                 button.setBackground(new Color(20, 30, 40));
                 button.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(0, 150, 255, 180), 3),
+                    BorderFactory.createLineBorder(new Color(0, 150, 255), 3),
                     BorderFactory.createEmptyBorder(20, 30, 20, 30)
                 ));
-                if (glowTimer != null) {
-                    glowTimer.stop();
-                }
-                button.setForeground(new Color(0, 255, 255));
             }
             
             @Override
@@ -1258,21 +1269,9 @@ public class ATMInterface extends JFrame {
             }
         });
         
-        // Add ambient glow effect
-        Timer ambientGlowTimer = new Timer(100, evt -> {
-            float ambient = (float) (0.8 + 0.2 * Math.sin(System.currentTimeMillis() / 2000.0));
-            button.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(0, (int)(150 * ambient), (int)(255 * ambient), 180), 3),
-                BorderFactory.createEmptyBorder(20, 30, 20, 30)
-            ));
-        });
-        ambientGlowTimer.start();
-        
         button.setHorizontalAlignment(SwingConstants.CENTER);
-        button.setFocusPainted(false); // Remove focus border for cleaner look
-        
-        button.setContentAreaFilled(true);
         button.setFocusPainted(false);
+        button.setContentAreaFilled(true);
         button.setPreferredSize(new Dimension(250, 80));
         button.setHorizontalTextPosition(SwingConstants.CENTER);
         button.setVerticalTextPosition(SwingConstants.CENTER);
@@ -1852,54 +1851,165 @@ public class ATMInterface extends JFrame {
 
     private void showWithdrawDialog() {
         JPanel withdrawPanel = createATMScreen("WITHDRAW");
-        JPanel contentPanel = new JPanel(new GridBagLayout());
-        contentPanel.setBackground(Color.BLACK);
+        JPanel contentPanel = new JPanel(new BorderLayout(20, 20));
+        contentPanel.setBackground(new Color(0, 15, 30));
+        contentPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(0, 150, 255), 2),
+            BorderFactory.createEmptyBorder(30, 30, 30, 30)
+        ));
+
+        // Create holographic display panel with scanline effect
+        JPanel displayPanel = new JPanel(new BorderLayout(15, 15)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // Create holographic background effect
+                GradientPaint gp = new GradientPaint(
+                    0, 0, new Color(0, 30, 60),
+                    getWidth(), getHeight(), new Color(0, 15, 30));
+                g2d.setPaint(gp);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+
+                // Add scanline effect
+                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.1f));
+                int y = (int) (System.currentTimeMillis() / 50 % getHeight());
+                g2d.setColor(new Color(0, 255, 255, 30));
+                g2d.fillRect(0, y, getWidth(), 2);
+            }
+        };
+        displayPanel.setBackground(new Color(0, 15, 30));
+        displayPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(0, 200, 255), 2),
+            BorderFactory.createEmptyBorder(20, 20, 20, 20)
+        ));
+
+        // Create balance display with holographic effect
+        JPanel balancePanel = new JPanel(new BorderLayout(10, 10));
+        balancePanel.setOpaque(false);
+        balancePanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(0, 200, 255, 100), 2),
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
+
+        JLabel balanceLabel = new JLabel(String.format("Available Balance: ₱%,.2f", currentAccount.getBalance()));
+        balanceLabel.setFont(new Font("Consolas", Font.BOLD, 24));
+        balanceLabel.setForeground(new Color(0, 255, 255));
+        balanceLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
+        balancePanel.add(balanceLabel, BorderLayout.CENTER);
+
+        // Create amount input panel with modern styling
+        JPanel inputPanel = new JPanel(new GridBagLayout());
+        inputPanel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.insets = new Insets(15, 15, 15, 15);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Amount input
-        JLabel amountLabel = new JLabel("Enter Amount to Withdraw:");
-        amountLabel.setForeground(Color.GREEN);
-        amountLabel.setFont(new Font("Consolas", Font.BOLD, 16));
+        // Enhanced amount label with dynamic glow
+        JLabel amountLabel = new JLabel("ENTER WITHDRAWAL AMOUNT") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                
+                // Draw glow effect
+                g2d.setColor(new Color(0, 255, 255, 50));
+                g2d.setFont(getFont().deriveFont(Font.BOLD, 24));
+                for (int i = 0; i < 5; i++) {
+                    g2d.drawString(getText(), i, getHeight() / 2 + i);
+                }
+                
+                // Draw main text
+                g2d.setColor(new Color(0, 255, 255));
+                g2d.drawString(getText(), 0, getHeight() / 2);
+            }
+        };
+        amountLabel.setFont(new Font("Consolas", Font.BOLD, 24));
 
-        JTextField amountField = new JTextField(15);
-        styleTextField(amountField);
+        // Modern amount input field with LED-style display
+        JTextField amountField = new JTextField(15) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // Quick amount buttons
-        JPanel quickAmountPanel = new JPanel(new GridLayout(2, 3, 10, 10));
-        quickAmountPanel.setBackground(Color.BLACK);
-        int[] quickAmounts = {1000, 2000, 3000, 5000, 10000, 20000};
-        
+                // Background
+                g2d.setColor(new Color(0, 20, 40));
+                g2d.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+
+                // Border with glow
+                g2d.setColor(new Color(0, 200, 255));
+                g2d.setStroke(new BasicStroke(2f));
+                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+
+                // Draw text with currency symbol
+                g2d.setFont(new Font("Consolas", Font.BOLD, 36));
+                g2d.setColor(new Color(0, 255, 255));
+                String text = getText().isEmpty() ? "₱0.00" : "₱" + getText();
+                FontMetrics fm = g2d.getFontMetrics();
+                g2d.drawString(text, 10, ((getHeight() - fm.getHeight()) / 2) + fm.getAscent());
+            }
+        };
+        amountField.setPreferredSize(new Dimension(300, 60));
+        amountField.setOpaque(false);
+        amountField.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        amountField.setForeground(new Color(0, 255, 255));
+        amountField.setCaretColor(new Color(0, 255, 255));
+        amountField.setFont(new Font("Consolas", Font.BOLD, 36));
+
+        // Quick amount buttons with holographic effect
+        JPanel quickAmountPanel = new JPanel(new GridLayout(2, 3, 15, 15));
+        quickAmountPanel.setOpaque(false);
+        int[] quickAmounts = {1000, 2000, 5000, 10000, 15000, 20000};
+
         for (int amount : quickAmounts) {
-            JButton amountButton = createATMButton("₱" + amount, new Color(0, 100, 0));
-            amountButton.addActionListener(_ -> {
+            JButton quickButton = createTransactionButton(String.format("₱%,d", amount));
+            quickButton.addActionListener(e -> {
                 amountField.setText(String.valueOf(amount));
                 playSound("button");
             });
-            quickAmountPanel.add(amountButton);
+            quickAmountPanel.add(quickButton);
         }
 
-        // Buttons
-        JButton withdrawButton = createATMButton("WITHDRAW", new Color(0, 100, 0));
-        JButton cancelButton = createATMButton("CANCEL", new Color(139, 0, 0));
+        // Action buttons with enhanced styling
+        JButton withdrawButton = createTransactionButton("WITHDRAW");
+        withdrawButton.setBackground(new Color(0, 100, 0));
+        JButton cancelButton = createTransactionButton("CANCEL");
+        cancelButton.setBackground(new Color(139, 0, 0));
 
-        // Layout
+        // Layout components
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setOpaque(false);
+        topPanel.add(balancePanel, BorderLayout.NORTH);
+
         gbc.gridwidth = 2;
-        gbc.gridy = 0; contentPanel.add(amountLabel, gbc);
-        gbc.gridy = 1; contentPanel.add(amountField, gbc);
-        gbc.gridy = 2; contentPanel.add(quickAmountPanel, gbc);
-        
-        gbc.gridy = 3;
-        gbc.gridwidth = 1;
-        contentPanel.add(withdrawButton, gbc);
-        gbc.gridx = 1;
-        contentPanel.add(cancelButton, gbc);
+        gbc.gridy = 0; inputPanel.add(amountLabel, gbc);
+        gbc.gridy = 1; inputPanel.add(amountField, gbc);
+        gbc.gridy = 2; inputPanel.add(quickAmountPanel, gbc);
 
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        buttonPanel.setOpaque(false);
+        buttonPanel.add(withdrawButton);
+        buttonPanel.add(cancelButton);
+
+        displayPanel.add(topPanel, BorderLayout.NORTH);
+        displayPanel.add(inputPanel, BorderLayout.CENTER);
+        displayPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        contentPanel.add(displayPanel, BorderLayout.CENTER);
         withdrawPanel.add(contentPanel, BorderLayout.CENTER);
+
+        // Add scanline animation
+        Timer scanlineTimer = new Timer(50, e -> displayPanel.repaint());
+        scanlineTimer.start();
+
         mainPanel.add(withdrawPanel, "withdraw");
         cardLayout.show(mainPanel, "withdraw");
 
-        // Action listeners
+        // Enhanced action listeners with animations
         withdrawButton.addActionListener(_ -> {
             try {
                 double amount = Double.parseDouble(amountField.getText());
@@ -1915,58 +2025,201 @@ public class ATMInterface extends JFrame {
                     showErrorScreen("Amount must be in multiples of 100!");
                     return;
                 }
-                
-                // Process withdrawal first
-                currentAccount.withdraw(amount);
-                saveAccountToFile(currentAccount);
-                playSound("card");
-                
-                // Show success screen with receipt option
-                showReceiptOptionScreen("WITHDRAWAL", amount);
-                
+
+                // Show processing animation
+                JDialog processingDialog = new JDialog(this, "Processing", true);
+                processingDialog.setUndecorated(true);
+                processingDialog.setSize(300, 150);
+                processingDialog.setLocationRelativeTo(this);
+
+                JPanel processingPanel = new JPanel(new BorderLayout(10, 10));
+                processingPanel.setBackground(new Color(0, 15, 30));
+                processingPanel.setBorder(BorderFactory.createLineBorder(new Color(0, 200, 255), 2));
+
+                JLabel processingLabel = new JLabel("PROCESSING WITHDRAWAL");
+                processingLabel.setFont(new Font("Consolas", Font.BOLD, 18));
+                processingLabel.setForeground(new Color(0, 255, 255));
+                processingLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
+                JProgressBar progressBar = new JProgressBar();
+                progressBar.setIndeterminate(true);
+                progressBar.setBackground(new Color(0, 20, 40));
+                progressBar.setForeground(new Color(0, 255, 255));
+
+                processingPanel.add(processingLabel, BorderLayout.CENTER);
+                processingPanel.add(progressBar, BorderLayout.SOUTH);
+                processingDialog.add(processingPanel);
+
+                // Process withdrawal after brief animation
+                Timer processTimer = new Timer(1500, e -> {
+                    processingDialog.dispose();
+                    currentAccount.withdraw(amount);
+                    saveAccountToFile(currentAccount);
+                    playSound("cash");
+                    showReceiptOptionScreen("WITHDRAWAL", amount);
+                });
+                processTimer.setRepeats(false);
+                processTimer.start();
+
+                processingDialog.setVisible(true);
             } catch (NumberFormatException ex) {
                 showErrorScreen("Please enter a valid amount!");
             }
         });
 
-        cancelButton.addActionListener(_ -> cardLayout.show(mainPanel, "mainMenu"));
+        cancelButton.addActionListener(_ -> {
+            playSound("button");
+            cardLayout.show(mainPanel, "mainMenu");
+        });
     }
+// Remove extra closing brace as it was causing a syntax error
 
     private void showDepositDialog() {
         JPanel depositPanel = createATMScreen("DEPOSIT");
-        JPanel contentPanel = new JPanel(new GridBagLayout());
-        contentPanel.setBackground(Color.BLACK);
+        JPanel contentPanel = new JPanel(new BorderLayout(20, 20));
+        contentPanel.setBackground(new Color(0, 15, 30));
+        contentPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(0, 150, 255), 2),
+            BorderFactory.createEmptyBorder(30, 30, 30, 30)
+        ));
+
+        // Create holographic display panel with scanline effect
+        JPanel displayPanel = new JPanel(new BorderLayout(15, 15)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // Create holographic background effect
+                GradientPaint gp = new GradientPaint(
+                    0, 0, new Color(0, 30, 60),
+                    getWidth(), getHeight(), new Color(0, 15, 30));
+                g2d.setPaint(gp);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+
+                // Add scanline effect
+                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.1f));
+                int y = (int) (System.currentTimeMillis() / 50 % getHeight());
+                g2d.setColor(new Color(0, 255, 255, 30));
+                g2d.fillRect(0, y, getWidth(), 2);
+            }
+        };
+        displayPanel.setBackground(new Color(0, 15, 30));
+        displayPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(0, 200, 255), 2),
+            BorderFactory.createEmptyBorder(20, 20, 20, 20)
+        ));
+
+        // Create balance display with holographic effect
+        JPanel balancePanel = new JPanel(new BorderLayout(10, 10));
+        balancePanel.setOpaque(false);
+        balancePanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(0, 200, 255, 100), 2),
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
+
+        JLabel balanceLabel = new JLabel(String.format("Current Balance: ₱%,.2f", currentAccount.getBalance()));
+        balanceLabel.setFont(new Font("Consolas", Font.BOLD, 24));
+        balanceLabel.setForeground(new Color(0, 255, 255));
+        balanceLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
+        balancePanel.add(balanceLabel, BorderLayout.CENTER);
+
+        // Create amount input panel with modern styling
+        JPanel inputPanel = new JPanel(new GridBagLayout());
+        inputPanel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.insets = new Insets(15, 15, 15, 15);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Amount input
-        JLabel amountLabel = new JLabel("Enter Amount to Deposit:");
-        amountLabel.setForeground(Color.GREEN);
-        amountLabel.setFont(new Font("Consolas", Font.BOLD, 16));
+        // Enhanced amount label with dynamic glow
+        JLabel amountLabel = new JLabel("ENTER DEPOSIT AMOUNT") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                
+                // Draw glow effect
+                g2d.setColor(new Color(0, 255, 255, 50));
+                g2d.setFont(getFont().deriveFont(Font.BOLD, 24));
+                for (int i = 0; i < 5; i++) {
+                    g2d.drawString(getText(), i, getHeight() / 2 + i);
+                }
+                
+                // Draw main text
+                g2d.setColor(new Color(0, 255, 255));
+                g2d.drawString(getText(), 0, getHeight() / 2);
+            }
+        };
+        amountLabel.setFont(new Font("Consolas", Font.BOLD, 24));
 
-        JTextField amountField = new JTextField(15);
-        styleTextField(amountField);
+        // Modern amount input field with LED-style display
+        JTextField amountField = new JTextField(15) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // Buttons
-        JButton depositButton = createATMButton("DEPOSIT", new Color(0, 100, 0));
-        JButton cancelButton = createATMButton("CANCEL", new Color(139, 0, 0));
+                // Background
+                g2d.setColor(new Color(0, 20, 40));
+                g2d.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
 
-        // Layout
+                // Border with glow
+                g2d.setColor(new Color(0, 200, 255));
+                g2d.setStroke(new BasicStroke(2f));
+                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+
+                // Draw text with currency symbol
+                g2d.setFont(new Font("Consolas", Font.BOLD, 36));
+                g2d.setColor(new Color(0, 255, 255));
+                String text = getText().isEmpty() ? "₱0.00" : "₱" + getText();
+                FontMetrics fm = g2d.getFontMetrics();
+                g2d.drawString(text, 10, ((getHeight() - fm.getHeight()) / 2) + fm.getAscent());
+            }
+        };
+        amountField.setPreferredSize(new Dimension(300, 60));
+        amountField.setOpaque(false);
+        amountField.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        amountField.setForeground(new Color(0, 255, 255));
+        amountField.setCaretColor(new Color(0, 255, 255));
+        amountField.setFont(new Font("Consolas", Font.BOLD, 36));
+
+        // Action buttons with enhanced styling
+        JButton depositButton = createTransactionButton("DEPOSIT");
+        depositButton.setBackground(new Color(0, 100, 0));
+        JButton cancelButton = createTransactionButton("CANCEL");
+        cancelButton.setBackground(new Color(139, 0, 0));
+
+        // Layout components
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setOpaque(false);
+        topPanel.add(balancePanel, BorderLayout.NORTH);
+
         gbc.gridwidth = 2;
-        gbc.gridy = 0; contentPanel.add(amountLabel, gbc);
-        gbc.gridy = 1; contentPanel.add(amountField, gbc);
-        
-        gbc.gridy = 2;
-        gbc.gridwidth = 1;
-        contentPanel.add(depositButton, gbc);
-        gbc.gridx = 1;
-        contentPanel.add(cancelButton, gbc);
+        gbc.gridy = 0; inputPanel.add(amountLabel, gbc);
+        gbc.gridy = 1; inputPanel.add(amountField, gbc);
 
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        buttonPanel.setOpaque(false);
+        buttonPanel.add(depositButton);
+        buttonPanel.add(cancelButton);
+
+        displayPanel.add(topPanel, BorderLayout.NORTH);
+        displayPanel.add(inputPanel, BorderLayout.CENTER);
+        displayPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        contentPanel.add(displayPanel, BorderLayout.CENTER);
         depositPanel.add(contentPanel, BorderLayout.CENTER);
+
+        // Add scanline animation
+        Timer scanlineTimer = new Timer(50, e -> displayPanel.repaint());
+        scanlineTimer.start();
+
         mainPanel.add(depositPanel, "deposit");
         cardLayout.show(mainPanel, "deposit");
 
-        // Action listeners
+        // Enhanced action listeners with animations
         depositButton.addActionListener(_ -> {
             try {
                 double amount = Double.parseDouble(amountField.getText());

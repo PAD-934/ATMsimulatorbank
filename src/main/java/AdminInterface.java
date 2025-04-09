@@ -7,6 +7,130 @@ import java.util.HashMap;
 import java.util.List;
 
 public class AdminInterface extends JFrame {
+    // Custom colors for futuristic theme
+    private static final Color NEON_CYAN = new Color(0, 255, 255);
+    private static final Color DARK_BG = new Color(20, 30, 40);
+    private static final Color FIELD_BG = new Color(30, 40, 50);
+    private static final Color BORDER_COLOR = new Color(0, 200, 255);
+    
+    private JTextField createFuturisticTextField() {
+        JTextField field = new JTextField(20) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Background
+                g2d.setColor(FIELD_BG);
+                g2d.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+                
+                // Border with glow
+                g2d.setColor(BORDER_COLOR);
+                g2d.setStroke(new BasicStroke(2f));
+                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+                
+                super.paintComponent(g);
+            }
+        };
+        field.setOpaque(false);
+        field.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        field.setForeground(NEON_CYAN);
+        field.setCaretColor(NEON_CYAN);
+        field.setFont(new Font("Consolas", Font.PLAIN, 14));
+        return field;
+    }
+    
+    private JPasswordField createFuturisticPasswordField() {
+        JPasswordField field = new JPasswordField(20) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Background
+                g2d.setColor(FIELD_BG);
+                g2d.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+                
+                // Border with glow
+                g2d.setColor(BORDER_COLOR);
+                g2d.setStroke(new BasicStroke(2f));
+                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+                
+                super.paintComponent(g);
+            }
+        };
+        field.setOpaque(false);
+        field.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        field.setForeground(NEON_CYAN);
+        field.setCaretColor(NEON_CYAN);
+        field.setFont(new Font("Consolas", Font.PLAIN, 14));
+        return field;
+    }
+    
+    private JButton createFuturisticButton(String text) {
+        JButton button = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Button background with gradient based on button type
+                Color startColor, endColor, glowColor;
+                if (getText().contains("Create")) {
+                    startColor = new Color(0, 100, 0);
+                    endColor = new Color(0, 150, 0);
+                    glowColor = new Color(0, 255, 0, 100);
+                } else if (getText().contains("Update")) {
+                    startColor = new Color(0, 100, 130);
+                    endColor = new Color(0, 150, 200);
+                    glowColor = new Color(0, 200, 255, 100);
+                } else if (getText().contains("Delete")) {
+                    startColor = new Color(130, 0, 0);
+                    endColor = new Color(200, 0, 0);
+                    glowColor = new Color(255, 0, 0, 100);
+                } else if (getText().contains("Refresh")) {
+                    startColor = new Color(100, 100, 0);
+                    endColor = new Color(150, 150, 0);
+                    glowColor = new Color(255, 255, 0, 100);
+                } else {
+                    startColor = new Color(50, 50, 50);
+                    endColor = new Color(100, 100, 100);
+                    glowColor = new Color(200, 200, 200, 100);
+                }
+                
+                GradientPaint gradient = new GradientPaint(
+                    0, 0, startColor,
+                    0, getHeight(), endColor);
+                g2d.setPaint(gradient);
+                g2d.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+                
+                // Glow effect
+                if (getModel().isPressed()) {
+                    g2d.setColor(glowColor);
+                } else if (getModel().isRollover()) {
+                    g2d.setColor(new Color(glowColor.getRed(), glowColor.getGreen(), glowColor.getBlue(), 150));
+                } else {
+                    g2d.setColor(new Color(glowColor.getRed(), glowColor.getGreen(), glowColor.getBlue(), 50));
+                }
+                g2d.setStroke(new BasicStroke(2f));
+                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+                
+                // Text
+                g2d.setFont(new Font("Consolas", Font.BOLD, 16));
+                g2d.setColor(Color.WHITE);
+                FontMetrics fm = g2d.getFontMetrics();
+                int x = (getWidth() - fm.stringWidth(getText())) / 2;
+                int y = ((getHeight() - fm.getHeight()) / 2) + fm.getAscent();
+                g2d.drawString(getText(), x, y);
+            }
+        };
+        button.setPreferredSize(new Dimension(150, 40));
+        button.setContentAreaFilled(false);
+        button.setBorderPainted(false);
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return button;
+    }
     private JPanel mainPanel;
     private CardLayout cardLayout;
     private HashMap<String, Account> accounts;
@@ -30,40 +154,81 @@ public class AdminInterface extends JFrame {
     }
 
     private void createLoginPanel() {
-        JPanel loginPanel = new JPanel(new GridBagLayout());
-        loginPanel.setBackground(new Color(50, 50, 50));
+        JPanel loginPanel = new JPanel(new GridBagLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Create futuristic gradient background
+                GradientPaint gradient = new GradientPaint(
+                    0, 0, new Color(20, 30, 40),
+                    getWidth(), getHeight(), new Color(40, 50, 70));
+                g2d.setPaint(gradient);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+                
+                // Add subtle grid effect
+                g2d.setColor(new Color(60, 70, 90, 30));
+                int gridSize = 20;
+                for (int i = 0; i < getWidth(); i += gridSize) {
+                    g2d.drawLine(i, 0, i, getHeight());
+                }
+                for (int i = 0; i < getHeight(); i += gridSize) {
+                    g2d.drawLine(0, i, getWidth(), i);
+                }
+            }
+        };
+        loginPanel.setBackground(new Color(20, 30, 40));
 
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.insets = new Insets(15, 15, 15, 15);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        JLabel titleLabel = new JLabel("Admin Login");
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
-        titleLabel.setForeground(Color.WHITE);
+        // Create glowing title
+        JLabel titleLabel = new JLabel("ADMIN LOGIN") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Create glow effect
+                g2d.setColor(new Color(0, 255, 255, 50));
+                g2d.setFont(getFont().deriveFont(Font.BOLD, 26));
+                g2d.drawString(getText(), 1, 26);
+                g2d.drawString(getText(), -1, 26);
+                
+                // Main text
+                g2d.setColor(new Color(0, 255, 255));
+                g2d.drawString(getText(), 0, 25);
+            }
+        };
+        titleLabel.setFont(new Font("Consolas", Font.BOLD, 24));
+        titleLabel.setForeground(new Color(0, 255, 255));
         titleLabel.setHorizontalAlignment(JLabel.CENTER);
-
-        JTextField usernameField = new JTextField(20);
-        JPasswordField passwordField = new JPasswordField(20);
-        JButton loginButton = new JButton("Login");
-
-        // Style components
-        usernameField.setFont(new Font("Arial", Font.PLAIN, 14));
-        passwordField.setFont(new Font("Arial", Font.PLAIN, 14));
-        loginButton.setFont(new Font("Arial", Font.BOLD, 14));
-        loginButton.setBackground(new Color(0, 100, 0));
-        loginButton.setForeground(Color.WHITE);
+        
+        // Create custom text fields
+        JTextField usernameField = createFuturisticTextField();
+        JPasswordField passwordField = createFuturisticPasswordField();
+        JButton loginButton = createFuturisticButton("LOGIN");
 
         // Add components
         gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
         loginPanel.add(titleLabel, gbc);
 
         gbc.gridy = 1; gbc.gridwidth = 1;
-        loginPanel.add(new JLabel("Username:"), gbc);
+        JLabel userLabel = new JLabel("USERNAME");
+        userLabel.setForeground(new Color(0, 255, 255));
+        userLabel.setFont(new Font("Consolas", Font.BOLD, 14));
+        loginPanel.add(userLabel, gbc);
         gbc.gridx = 1;
         loginPanel.add(usernameField, gbc);
 
         gbc.gridx = 0; gbc.gridy = 2;
-        loginPanel.add(new JLabel("Password:"), gbc);
+        JLabel passLabel = new JLabel("PASSWORD");
+        passLabel.setForeground(new Color(0, 255, 255));
+        passLabel.setFont(new Font("Consolas", Font.BOLD, 14));
+        loginPanel.add(passLabel, gbc);
         gbc.gridx = 1;
         loginPanel.add(passwordField, gbc);
 
@@ -90,7 +255,32 @@ public class AdminInterface extends JFrame {
     }
 
     private void createDashboardPanel() {
-        JPanel dashboardPanel = new JPanel(new BorderLayout());
+        JPanel dashboardPanel = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Create futuristic gradient background
+                GradientPaint gradient = new GradientPaint(
+                    0, 0, new Color(20, 30, 40),
+                    getWidth(), getHeight(), new Color(40, 50, 70));
+                g2d.setPaint(gradient);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+                
+                // Add subtle grid effect
+                g2d.setColor(new Color(60, 70, 90, 30));
+                int gridSize = 30;
+                for (int i = 0; i < getWidth(); i += gridSize) {
+                    g2d.drawLine(i, 0, i, getHeight());
+                }
+                for (int i = 0; i < getHeight(); i += gridSize) {
+                    g2d.drawLine(0, i, getWidth(), i);
+                }
+            }
+        };
+        dashboardPanel.setBackground(new Color(20, 30, 40));
         dashboardPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         // Create table model for user accounts with non-editable cells
@@ -104,7 +294,26 @@ public class AdminInterface extends JFrame {
 
         JTable accountTable = new JTable(accountModel);
         accountTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        JScrollPane accountScrollPane = new JScrollPane(accountTable);
+        accountTable.setBackground(new Color(30, 40, 50));
+        accountTable.setForeground(Color.WHITE);
+        accountTable.setGridColor(new Color(0, 200, 255, 100));
+        accountTable.setFont(new Font("Consolas", Font.PLAIN, 14));
+        accountTable.getTableHeader().setBackground(new Color(20, 30, 40));
+        accountTable.getTableHeader().setForeground(NEON_CYAN);
+        accountTable.getTableHeader().setFont(new Font("Consolas", Font.BOLD, 14));
+        
+        JScrollPane accountScrollPane = new JScrollPane(accountTable) {
+            @Override
+            protected void paintBorder(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setColor(BORDER_COLOR);
+                g2d.setStroke(new BasicStroke(2f));
+                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+            }
+        };
+        accountScrollPane.setBorder(BorderFactory.createEmptyBorder());
+        accountScrollPane.getViewport().setBackground(new Color(30, 40, 50));
 
         // Create transaction history table
         DefaultTableModel transactionModel = new DefaultTableModel(
@@ -116,7 +325,26 @@ public class AdminInterface extends JFrame {
         };
 
         JTable transactionTable = new JTable(transactionModel);
-        JScrollPane transactionScrollPane = new JScrollPane(transactionTable);
+        transactionTable.setBackground(new Color(30, 40, 50));
+        transactionTable.setForeground(Color.WHITE);
+        transactionTable.setGridColor(new Color(0, 200, 255, 100));
+        transactionTable.setFont(new Font("Consolas", Font.PLAIN, 14));
+        transactionTable.getTableHeader().setBackground(new Color(20, 30, 40));
+        transactionTable.getTableHeader().setForeground(NEON_CYAN);
+        transactionTable.getTableHeader().setFont(new Font("Consolas", Font.BOLD, 14));
+        
+        JScrollPane transactionScrollPane = new JScrollPane(transactionTable) {
+            @Override
+            protected void paintBorder(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setColor(BORDER_COLOR);
+                g2d.setStroke(new BasicStroke(2f));
+                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+            }
+        };
+        transactionScrollPane.setBorder(BorderFactory.createEmptyBorder());
+        transactionScrollPane.getViewport().setBackground(new Color(30, 40, 50));
 
         // Create split pane
         JSplitPane splitPane = new JSplitPane(
@@ -125,21 +353,31 @@ public class AdminInterface extends JFrame {
             transactionScrollPane);
         splitPane.setDividerLocation(200);
 
-        // Create CRUD buttons panel
-        JPanel crudPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JButton createButton = new JButton("Create Account");
-        JButton updateButton = new JButton("Update Account");
-        JButton deleteButton = new JButton("Delete Account");
-        JButton refreshButton = new JButton("Refresh");
-        JButton logoutButton = new JButton("Logout");
-
-        // Style buttons
-        createButton.setBackground(new Color(0, 100, 0));
-        updateButton.setBackground(new Color(0, 0, 139));
-        deleteButton.setBackground(new Color(139, 0, 0));
-        createButton.setForeground(Color.WHITE);
-        updateButton.setForeground(Color.WHITE);
-        deleteButton.setForeground(Color.WHITE);
+        // Create CRUD buttons panel with futuristic style
+        JPanel crudPanel = new JPanel(new FlowLayout(FlowLayout.LEFT)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Semi-transparent background
+                g2d.setColor(new Color(30, 40, 50, 200));
+                g2d.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 15, 15);
+                
+                // Glowing border
+                g2d.setColor(new Color(0, 200, 255, 100));
+                g2d.setStroke(new BasicStroke(2f));
+                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 15, 15);
+            }
+        };
+        crudPanel.setOpaque(false);
+        
+        JButton createButton = createFuturisticButton("Create Account");
+        JButton updateButton = createFuturisticButton("Update Account");
+        JButton deleteButton = createFuturisticButton("Delete Account");
+        JButton refreshButton = createFuturisticButton("Refresh");
+        JButton logoutButton = createFuturisticButton("Logout");
 
         // Add action listeners
         createButton.addActionListener(e -> showCreateAccountDialog());
