@@ -5,6 +5,7 @@ import javax.swing.*;
 import javax.swing.border.BevelBorder;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.geom.Rectangle2D;
 import java.io.*;
 import java.util.HashMap;
 import javax.sound.sampled.*;
@@ -104,41 +105,103 @@ public class ATMInterface extends JFrame {
     }
 
     private void createLoginPanel() {
-        JPanel loginPanel = new JPanel(new BorderLayout());
-        loginPanel.setBackground(new Color(200, 200, 200));
+        JPanel loginPanel = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                int w = getWidth(), h = getHeight();
+                GradientPaint gp = new GradientPaint(0, 0, new Color(40, 40, 40),
+                        0, h, new Color(20, 20, 20));
+                g2d.setPaint(gp);
+                g2d.fillRect(0, 0, w, h);
+            }
+        };
 
-        // Screen panel (center)
-        JPanel screenPanel = new JPanel(new GridBagLayout());
-        screenPanel.setBackground(Color.BLACK);
+        // Screen panel (center) with modern design
+        JPanel screenPanel = new JPanel(new GridBagLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                int w = getWidth(), h = getHeight();
+                GradientPaint gp = new GradientPaint(0, 0, new Color(30, 30, 30),
+                        w, h, new Color(15, 15, 15));
+                g2d.setPaint(gp);
+                g2d.fillRect(0, 0, w, h);
+            }
+        };
+        
         screenPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(Color.DARK_GRAY, 15),
-            BorderFactory.createLineBorder(Color.BLACK, 10)
+            BorderFactory.createLineBorder(new Color(0, 100, 0), 2),
+            BorderFactory.createEmptyBorder(20, 20, 20, 20)
         ));
 
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 30, 10, 30);
+        gbc.insets = new Insets(15, 30, 15, 30);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Title with ATM-style font
-        JLabel titleLabel = new JLabel("Welcome to BDA ATM Machine");
+        // Modern title with glowing effect
+        JLabel titleLabel = new JLabel("Welcome to BDA ATM Machine") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                
+                // Draw glow effect
+                g2d.setColor(new Color(0, 255, 0, 50));
+                g2d.setFont(getFont().deriveFont(Font.BOLD, 24));
+                for (int i = 0; i < 5; i++) {
+                    g2d.drawString(getText(), i, getHeight() / 2 + i);
+                }
+                
+                // Draw main text
+                g2d.setColor(new Color(0, 255, 0));
+                g2d.drawString(getText(), 0, getHeight() / 2);
+            }
+        };
         titleLabel.setFont(new Font("Consolas", Font.BOLD, 24));
-        titleLabel.setForeground(Color.GREEN);
+        titleLabel.setForeground(new Color(0, 255, 0));
         titleLabel.setHorizontalAlignment(JLabel.CENTER);
         
-        // Input fields with ATM-style
-        JLabel accLabel = new JLabel("ACCOUNT NUMBER:");
-        accLabel.setForeground(Color.GREEN);
-        accLabel.setFont(new Font("Consolas", Font.BOLD, 16));
-        
-        JTextField accField = new JTextField(15);
+        // Modern input fields with glowing labels
+        JLabel accLabel = createGlowingLabel("ACCOUNT NUMBER:");
+        JTextField accField = new JTextField(15) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                if (!hasFocus() && getText().isEmpty()) {
+                    Graphics2D g2d = (Graphics2D) g;
+                    g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                    g2d.setColor(new Color(0, 255, 0, 70));
+                    g2d.setFont(getFont().deriveFont(Font.ITALIC));
+                    g2d.drawString("Enter account number", 5, getHeight() - 8);
+                }
+            }
+        };
         styleTextField(accField);
 
-        JLabel pinLabel = new JLabel("ENTER PIN:");
-        pinLabel.setForeground(Color.GREEN);
-        pinLabel.setFont(new Font("Consolas", Font.BOLD, 16));
-        
-        JPasswordField pinField = new JPasswordField(15);
+        JLabel pinLabel = createGlowingLabel("ENTER PIN:");
+        JPasswordField pinField = new JPasswordField(15) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                if (!hasFocus() && getPassword().length == 0) {
+                    Graphics2D g2d = (Graphics2D) g;
+                    g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                    g2d.setColor(new Color(0, 255, 0, 70));
+                    g2d.setFont(getFont().deriveFont(Font.ITALIC));
+                    g2d.drawString("Enter PIN", 5, getHeight() - 8);
+                }
+            }
+        };
         styleTextField(pinField);
+
+        // Add focus listeners for glow effect
+        addGlowEffect(accField);
+        addGlowEffect(pinField);
 
         // Add components to screen
         gbc.gridx = 0; gbc.gridy = 0;
@@ -216,50 +279,123 @@ public class ATMInterface extends JFrame {
 
     // Helper methods for UI components
     private JButton createATMButton(String text, Color color) {
-        JButton button = new JButton(text);
-        button.setBackground(color);
+        JButton button = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // Create gradient background
+                GradientPaint gp = new GradientPaint(
+                    0, 0, color,
+                    0, getHeight(), color.darker());
+                g2d.setPaint(gp);
+                g2d.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+
+                // Add glow effect when mouse over
+                if (getModel().isRollover()) {
+                    g2d.setColor(new Color(255, 255, 255, 50));
+                    g2d.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+                }
+
+                // Draw text with glow
+                FontMetrics fm = g2d.getFontMetrics();
+                Rectangle2D r = fm.getStringBounds(getText(), g2d);
+                int x = (getWidth() - (int) r.getWidth()) / 2;
+                int y = (getHeight() - (int) r.getHeight()) / 2 + fm.getAscent();
+
+                // Draw glow
+                g2d.setColor(new Color(255, 255, 255, 50));
+                for (int i = 1; i <= 3; i++) {
+                    g2d.drawString(getText(), x + i, y + i);
+                }
+
+                // Draw main text
+                g2d.setColor(Color.WHITE);
+                g2d.drawString(getText(), x, y);
+            }
+        };
+        button.setFont(new Font("Consolas", Font.BOLD, 16));
         button.setForeground(Color.WHITE);
-        button.setFont(new Font("Consolas", Font.BOLD, 14));
         button.setFocusPainted(false);
-        button.setPreferredSize(new Dimension(150, 40));
-        button.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(Color.DARK_GRAY, 2),
-            BorderFactory.createBevelBorder(BevelBorder.RAISED)
-        ));
-        
-        // Add hover and press effects
+        button.setContentAreaFilled(false);
+        button.setBorderPainted(false);
+        button.setPreferredSize(new Dimension(150, 45));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        // Add press effect
         button.addMouseListener(new MouseAdapter() {
-            public void mouseEntered(MouseEvent e) {
-                button.setBackground(color.brighter());
-            }
-            public void mouseExited(MouseEvent e) {
-                button.setBackground(color);
-            }
             public void mousePressed(MouseEvent e) {
-                button.setBorder(BorderFactory.createBevelBorder(BevelBorder.LOWERED));
+                button.setLocation(button.getX(), button.getY() + 1);
             }
             public void mouseReleased(MouseEvent e) {
-                button.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(Color.DARK_GRAY, 2),
-                    BorderFactory.createBevelBorder(BevelBorder.RAISED)
-                ));
+                button.setLocation(button.getX(), button.getY() - 1);
             }
         });
+
         return button;
     }
 
     private void styleTextField(JTextField field) {
-        field.setBackground(Color.BLACK);
-        field.setForeground(Color.GREEN);
+        field.setBackground(new Color(20, 20, 20));
+        field.setForeground(new Color(0, 255, 0));
         field.setFont(new Font("Consolas", Font.BOLD, 16));
-        field.setCaretColor(Color.GREEN);
-        field.setBorder(BorderFactory.createLineBorder(Color.GREEN));
+        field.setCaretColor(new Color(0, 255, 0));
+        field.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(0, 100, 0), 2),
+            BorderFactory.createEmptyBorder(8, 10, 8, 10)
+        ));
+        field.setOpaque(true);
+    }
+
+    private JLabel createGlowingLabel(String text) {
+        JLabel label = new JLabel(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                
+                // Draw glow effect
+                g2d.setColor(new Color(0, 255, 0, 30));
+                g2d.setFont(getFont());
+                for (int i = 0; i < 3; i++) {
+                    g2d.drawString(getText(), i, getHeight() / 2 + i);
+                }
+                
+                // Draw main text
+                g2d.setColor(new Color(0, 255, 0));
+                g2d.drawString(getText(), 0, getHeight() / 2);
+            }
+        };
+        label.setFont(new Font("Consolas", Font.BOLD, 16));
+        return label;
+    }
+
+    private void addGlowEffect(JTextField field) {
+        field.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                field.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(0, 255, 0), 2),
+                    BorderFactory.createEmptyBorder(8, 10, 8, 10)
+                ));
+            }
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                field.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(0, 100, 0), 2),
+                    BorderFactory.createEmptyBorder(8, 10, 8, 10)
+                ));
+            }
+        });
     }
 
     private JPanel createKeypad() {
-        JPanel keypad = new JPanel(new GridLayout(4, 3, 8, 8));
-        keypad.setBackground(new Color(50, 50, 50));
-        keypad.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        JPanel keypad = new JPanel(new GridLayout(4, 3, 12, 12));
+        keypad.setBackground(new Color(30, 30, 30));
+        keypad.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         String[] keys = {
             "1", "2", "3",
@@ -269,28 +405,81 @@ public class ATMInterface extends JFrame {
         };
 
         for (String key : keys) {
-            JButton button = new JButton(key);
-            button.setPreferredSize(new Dimension(60, 60));
-            button.setBackground(new Color(70, 70, 70));
-            button.setForeground(Color.WHITE);
-            button.setFont(new Font("Consolas", Font.BOLD, 20));
-            button.setFocusPainted(false);
-            button.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Color.DARK_GRAY, 2),
-                BorderFactory.createBevelBorder(BevelBorder.RAISED)
-            ));
-            
-            // Add click effect and sound
-            button.addMouseListener(new MouseAdapter() {
-                public void mousePressed(MouseEvent e) {
-                    button.setBorder(BorderFactory.createBevelBorder(BevelBorder.LOWERED));
+            JButton button = new JButton(key) {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2d = (Graphics2D) g;
+                    g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                    // Create metallic gradient background
+                    GradientPaint gp = new GradientPaint(
+                        0, 0, new Color(80, 80, 80),
+                        0, getHeight(), new Color(40, 40, 40));
+                    g2d.setPaint(gp);
+                    g2d.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 15, 15);
+
+                    // Add subtle border
+                    g2d.setColor(new Color(100, 100, 100));
+                    g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 15, 15);
+
+                    // Add highlight effect when pressed
+                    if (getModel().isPressed()) {
+                        g2d.setColor(new Color(255, 255, 255, 30));
+                        g2d.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 15, 15);
+                    }
+
+                    // Draw text with glow
+                    FontMetrics fm = g2d.getFontMetrics();
+                    Rectangle2D r = fm.getStringBounds(getText(), g2d);
+                    int x = (getWidth() - (int) r.getWidth()) / 2;
+                    int y = (getHeight() - (int) r.getHeight()) / 2 + fm.getAscent();
+
+                    // Draw glow effect
+                    g2d.setColor(new Color(0, 255, 0, 40));
+                    for (int i = 1; i <= 3; i++) {
+                        g2d.drawString(getText(), x + i, y + i);
+                    }
+
+                    // Draw main text
+                    g2d.setColor(new Color(0, 255, 0));
+                    g2d.drawString(getText(), x, y);
                 }
+            };
+            button.setPreferredSize(new Dimension(70, 70));
+            button.setFont(new Font("Consolas", Font.BOLD, 22));
+            button.setFocusPainted(false);
+            button.setBorderPainted(false);
+            button.setContentAreaFilled(false);
+            button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            
+            // Add click effect and sound with smooth animation
+            button.addMouseListener(new MouseAdapter() {
+                Timer pressTimer;
+                
+                public void mousePressed(MouseEvent e) {
+                    if (pressTimer != null && pressTimer.isRunning()) {
+                        pressTimer.stop();
+                    }
+                    pressTimer = new Timer(50, evt -> {
+                        button.setLocation(button.getX(), button.getY() + 1);
+                        ((Timer)evt.getSource()).stop();
+                    });
+                    pressTimer.setRepeats(false);
+                    pressTimer.start();
+                }
+                
                 public void mouseReleased(MouseEvent e) {
-                    button.setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(Color.DARK_GRAY, 2),
-                        BorderFactory.createBevelBorder(BevelBorder.RAISED)
-                    ));
-                    playSound("button");
+                    if (pressTimer != null && pressTimer.isRunning()) {
+                        pressTimer.stop();
+                    }
+                    pressTimer = new Timer(50, evt -> {
+                        button.setLocation(button.getX(), button.getY() - 1);
+                        playSound("button");
+                        ((Timer)evt.getSource()).stop();
+                    });
+                    pressTimer.setRepeats(false);
+                    pressTimer.start();
                 }
             });
             
@@ -314,34 +503,88 @@ public class ATMInterface extends JFrame {
     }
 
     private void createSignUpPanel() {
-        JPanel signUpPanel = new JPanel(new BorderLayout());
-        signUpPanel.setBackground(new Color(200, 200, 200));
+        JPanel signUpPanel = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                int w = getWidth(), h = getHeight();
+                GradientPaint gp = new GradientPaint(0, 0, new Color(40, 40, 40),
+                        0, h, new Color(20, 20, 20));
+                g2d.setPaint(gp);
+                g2d.fillRect(0, 0, w, h);
+            }
+        };
 
-        // Create ATM screen panel with fixed dimensions
-        JPanel screenPanel = new JPanel(new GridBagLayout());
-        screenPanel.setBackground(Color.BLACK);
-        screenPanel.setPreferredSize(new Dimension(600, 400)); // Fixed screen size
+        // Create modern ATM screen panel with gradient background
+        JPanel screenPanel = new JPanel(new GridBagLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                int w = getWidth(), h = getHeight();
+                GradientPaint gp = new GradientPaint(0, 0, new Color(30, 30, 30),
+                        w, h, new Color(15, 15, 15));
+                g2d.setPaint(gp);
+                g2d.fillRect(0, 0, w, h);
+            }
+        };
+        screenPanel.setPreferredSize(new Dimension(600, 400));
         screenPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createBevelBorder(BevelBorder.RAISED, Color.GRAY, Color.DARK_GRAY),
-            BorderFactory.createLineBorder(Color.BLACK, 10)
+            BorderFactory.createLineBorder(new Color(0, 100, 0), 2),
+            BorderFactory.createEmptyBorder(20, 20, 20, 20)
         ));
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 30, 10, 30);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Title and Instructions
+        // Modern title and instructions with glowing effect
         JPanel titlePanel = new JPanel(new GridLayout(2, 1));
-        titlePanel.setBackground(Color.BLACK);
+        titlePanel.setOpaque(false);
 
-        JLabel titleLabel = new JLabel("CREATE NEW ACCOUNT");
+        JLabel titleLabel = new JLabel("CREATE NEW ACCOUNT") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                
+                // Draw glow effect
+                g2d.setColor(new Color(0, 255, 0, 50));
+                g2d.setFont(getFont().deriveFont(Font.BOLD, 24));
+                for (int i = 0; i < 5; i++) {
+                    g2d.drawString(getText(), i, getHeight() / 2 + i);
+                }
+                
+                // Draw main text
+                g2d.setColor(new Color(0, 255, 0));
+                g2d.drawString(getText(), 0, getHeight() / 2);
+            }
+        };
         titleLabel.setFont(new Font("Consolas", Font.BOLD, 24));
-        titleLabel.setForeground(Color.GREEN);
         titleLabel.setHorizontalAlignment(JLabel.CENTER);
 
-        JLabel instructionLabel = new JLabel("Please fill in all fields below");
+        JLabel instructionLabel = new JLabel("Please fill in all fields below") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                
+                // Draw glow effect
+                g2d.setColor(new Color(255, 255, 0, 30));
+                g2d.setFont(getFont().deriveFont(Font.ITALIC, 14));
+                for (int i = 0; i < 3; i++) {
+                    g2d.drawString(getText(), i, getHeight() / 2 + i);
+                }
+                
+                // Draw main text
+                g2d.setColor(Color.YELLOW);
+                g2d.drawString(getText(), 0, getHeight() / 2);
+            }
+        };
         instructionLabel.setFont(new Font("Consolas", Font.ITALIC, 14));
-        instructionLabel.setForeground(Color.YELLOW);
         instructionLabel.setHorizontalAlignment(JLabel.CENTER);
 
         titlePanel.add(titleLabel);
