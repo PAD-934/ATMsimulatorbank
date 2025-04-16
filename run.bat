@@ -2,7 +2,7 @@
 title ATM Interface
 echo Checking for required files...
 
-if not exist "bin\ATMInterface.class" (
+if not exist "bin\main\java\ATMInterface.class" (
     echo Error: ATMInterface.class not found!
     echo Please compile your Java files first.
     pause
@@ -15,6 +15,5 @@ if not exist "sounds" (
 )
 
 echo Starting ATM Interface...
-@echo off
-java -cp bin ATMInterface
+java -cp bin main.java.ATMInterface
 pause

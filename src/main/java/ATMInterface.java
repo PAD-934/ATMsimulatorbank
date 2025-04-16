@@ -67,8 +67,7 @@ public class ATMInterface extends JFrame {
             public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
                     simulateCardEjection();
-                    @SuppressWarnings("unused")
-                    Timer exitTimer = new Timer(1000, evt -> System.exit(0));
+                    Timer exitTimer = null;
                     exitTimer.setRepeats(false);
                     exitTimer.start();
                 }
@@ -183,7 +182,6 @@ public class ATMInterface extends JFrame {
         splashScreen.setFocusable(true);
     }
     
-    @SuppressWarnings("unused")
     private void startSplashAnimation() {
         splashTimer = new Timer(50, e -> {
             if (glowIncreasing) {
@@ -405,7 +403,6 @@ public class ATMInterface extends JFrame {
         return hardwarePanel;
     }
 
-    @SuppressWarnings("unused")
     private void createLoginPanel() {
         // Create card animation components
         cardPanel = new JPanel() {
@@ -1220,9 +1217,59 @@ public class ATMInterface extends JFrame {
         }
     }
 
+    private Map<String, Integer> failedAttempts = new HashMap<>();
+    private Map<String, Long> lockoutTime = new HashMap<>();
+    private static final int MAX_ATTEMPTS = 3;
+    private static final long LOCKOUT_DURATION = 300000; // 5 minutes in milliseconds
+
     private boolean validateLogin(String accNum, String pin) {
+        if (accNum.isEmpty() || pin.isEmpty()) {
+            return false;
+        }
+
+        // Check if account is locked
+        Long lockTime = lockoutTime.get(accNum);
+        if (lockTime != null) {
+            long remainingTime = (lockTime + LOCKOUT_DURATION - System.currentTimeMillis()) / 1000;
+            if (remainingTime > 0) {
+                JOptionPane.showMessageDialog(this,
+                    String.format("Account is locked. Please try again in %d seconds.", remainingTime),
+                    "Login Error",
+                    JOptionPane.ERROR_MESSAGE);
+                return false;
+            } else {
+                // Reset lockout if time has expired
+                lockoutTime.remove(accNum);
+                failedAttempts.remove(accNum);
+            }
+        }
+
         Account acc = accounts.get(accNum);
-        return acc != null && acc.getPin().equals(pin);
+        if (acc != null && acc.getPin().equals(pin)) {
+            // Reset failed attempts on successful login
+            failedAttempts.remove(accNum);
+            currentAccount = acc;
+            return true;
+        } else {
+            // Increment failed attempts
+            int attempts = failedAttempts.getOrDefault(accNum, 0) + 1;
+            failedAttempts.put(accNum, attempts);
+
+            if (attempts >= MAX_ATTEMPTS) {
+                // Lock the account
+                lockoutTime.put(accNum, System.currentTimeMillis());
+                JOptionPane.showMessageDialog(this,
+                    String.format("Account locked due to %d failed attempts. Please try again in 5 minutes.", MAX_ATTEMPTS),
+                    "Login Error",
+                    JOptionPane.ERROR_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this,
+                    String.format("Invalid PIN. %d attempts remaining.", MAX_ATTEMPTS - attempts),
+                    "Login Error",
+                    JOptionPane.ERROR_MESSAGE);
+            }
+            return false;
+        }
     }
 
     private void loadAccounts() {
@@ -1254,7 +1301,7 @@ public class ATMInterface extends JFrame {
         }
     }
 
-    @SuppressWarnings({ "unused", "null" })
+    @SuppressWarnings({ })
     private void createMainMenuPanel() {
         JPanel menuPanel = new JPanel(new BorderLayout());
         menuPanel.setBackground(new Color(20, 20, 30)); // Darker futuristic background
@@ -1344,37 +1391,20 @@ public class ATMInterface extends JFrame {
         welcomePanel.add(userLabel);
         welcomePanel.add(accountLabel);
 
-        // System status panel with real-time updates
-        JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 25, 10));
-        statusPanel.setBackground(new Color(0, 20, 40));
+        // Spacer panel for better layout
+        JPanel spacerPanel = new JPanel();
+        spacerPanel.setBackground(new Color(0, 20, 40));
+        spacerPanel.setPreferredSize(new Dimension(0, 30));
 
-        // Animated system status indicators
-        String[] statuses = {"SYSTEM", "NETWORK", "SECURITY"};
-        for (String status : statuses) {
-            JPanel indicator = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
-            indicator.setBackground(new Color(0, 10, 20));
-            
-            JLabel statusDot = new JLabel("●");
-            statusDot.setFont(new Font("Dialog", Font.BOLD, 24));
-            statusDot.setForeground(new Color(0, 255, 0));
-            
-            JLabel statusLabel = new JLabel(status + ": ONLINE");
-            statusLabel.setFont(new Font("Consolas", Font.BOLD, 20));
-            statusLabel.setForeground(new Color(0, 255, 255));
-            
-            // Add blinking effect to status dots
-            Timer blinkTimer = new Timer(2000, e -> {
-                statusDot.setForeground(new Color(0, 255, 0));
-                new Timer(100, e2 -> {
-                    statusDot.setForeground(new Color(0, 100, 0));
-                }).start();
-            });
-            blinkTimer.start();
-            
-            indicator.add(statusDot);
-            indicator.add(statusLabel);
-            statusPanel.add(indicator);
-        }
+        // Status panel with modern styling
+        JPanel statusPanel = new JPanel(new BorderLayout());
+        statusPanel.setBackground(new Color(0, 20, 40));
+        statusPanel.setBorder(BorderFactory.createLineBorder(new Color(0, 100, 255), 1));
+
+        JLabel statusLabel = new JLabel("System Status: Ready");
+        statusLabel.setFont(new Font("Consolas", Font.PLAIN, 16));
+        statusLabel.setForeground(new Color(0, 200, 255));
+        statusPanel.add(statusLabel, BorderLayout.CENTER);
 
         // News ticker with modern styling
         JPanel tickerPanel = new JPanel(new BorderLayout());
@@ -1710,7 +1740,6 @@ public class ATMInterface extends JFrame {
         return button;
     }
 
-    @SuppressWarnings("unused")
     private void handleTransaction(String option) {
         if (currentAccount == null) {
             showErrorScreen("Please login first!");
@@ -1769,7 +1798,7 @@ public class ATMInterface extends JFrame {
             }
             case "TRANSACTION HISTORY" -> showMiniStatement();
             case "CHANGE PIN" -> showChangePinDialog();
-            case "CANCEL", "EXIT" -> logout();
+            case "CANCEL", "EXIT" -> showLogoutConfirmation();
         }
     }
 
@@ -1800,6 +1829,34 @@ public class ATMInterface extends JFrame {
         cashPanel.add(contentPanel, BorderLayout.CENTER);
         mainPanel.add(cashPanel, "cashTransactions");
         cardLayout.show(mainPanel, "cashTransactions");
+    }
+
+    private void showLogoutConfirmation() {
+        JPanel confirmPanel = new JPanel(new BorderLayout(10, 10));
+        confirmPanel.setBackground(new Color(0, 20, 40));
+        confirmPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        JLabel confirmLabel = new JLabel("Are you sure you want to logout?");
+        confirmLabel.setFont(new Font("Consolas", Font.BOLD, 24));
+        confirmLabel.setForeground(new Color(0, 255, 255));
+        confirmLabel.setHorizontalAlignment(JLabel.CENTER);
+        confirmPanel.add(confirmLabel, BorderLayout.CENTER);
+
+        int choice = JOptionPane.showConfirmDialog(
+            this,
+            confirmPanel,
+            "Logout Confirmation",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE
+        );
+
+        if (choice == JOptionPane.YES_OPTION) {
+            logout();
+            simulateCardEjection();
+            Timer exitTimer = new Timer(1000, evt -> System.exit(0));
+            exitTimer.setRepeats(false);
+            exitTimer.start();
+        }
     }
 
     private void processWithdrawal(double amount) {
@@ -2154,7 +2211,6 @@ public class ATMInterface extends JFrame {
         noButton.addActionListener(_ -> cardLayout.show(mainPanel, "mainMenu"));
     }
 
-    @SuppressWarnings("unused")
     private void checkBalance() {
         // Create loading screen with futuristic design
         JPanel loadingPanel = createATMScreen("BALANCE INQUIRY");
@@ -2255,7 +2311,6 @@ public class ATMInterface extends JFrame {
         progressTimer.start();
     }
 
-    @SuppressWarnings("unused")
     private void showWithdrawDialog() {
         JPanel withdrawPanel = createATMScreen("WITHDRAW");
         JPanel contentPanel = new JPanel(new BorderLayout(20, 20));
@@ -2620,7 +2675,6 @@ public class ATMInterface extends JFrame {
         depositPanel.add(contentPanel, BorderLayout.CENTER);
 
         // Add scanline animation
-        @SuppressWarnings("unused")
         Timer scanlineTimer = new Timer(50, e -> displayPanel.repaint());
         scanlineTimer.start();
 

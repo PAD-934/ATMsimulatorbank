@@ -136,9 +136,12 @@ public class AdminInterface extends JFrame {
     private CardLayout cardLayout;
     private HashMap<String, Account> accounts;
     private DefaultTableModel accountModel;
+    private DefaultTableModel deletedAccountModel;
+    private DeletedAccountManager deletedAccountManager;
 
     public AdminInterface(HashMap<String, Account> accounts) {
         this.accounts = accounts;
+        this.deletedAccountManager = new DeletedAccountManager();
         
         setTitle("ATM Admin Interface");
         setSize(1000, 600);
@@ -150,6 +153,7 @@ public class AdminInterface extends JFrame {
 
         createLoginPanel();
         createDashboardPanel();
+        createDeletedAccountsPanel();
 
         add(mainPanel);
     }
@@ -256,8 +260,8 @@ public class AdminInterface extends JFrame {
     }
 
     @SuppressWarnings("unused")
-    private void createDashboardPanel() {
-        JPanel dashboardPanel = new JPanel(new BorderLayout()) {
+    private void createDeletedAccountsPanel() {
+        JPanel panel = new JPanel(new BorderLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
@@ -271,7 +275,141 @@ public class AdminInterface extends JFrame {
                 g2d.setPaint(gradient);
                 g2d.fillRect(0, 0, getWidth(), getHeight());
                 
-                // Add subtle grid effect
+                // Add grid effect
+                g2d.setColor(new Color(60, 70, 90, 30));
+                int gridSize = 20;
+                for (int i = 0; i < getWidth(); i += gridSize) {
+                    g2d.drawLine(i, 0, i, getHeight());
+                }
+                for (int i = 0; i < getHeight(); i += gridSize) {
+                    g2d.drawLine(0, i, getWidth(), i);
+                }
+            }
+        };
+        panel.setBackground(new Color(20, 30, 40));
+
+        // Create title panel
+        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        titlePanel.setOpaque(false);
+        JLabel titleLabel = new JLabel("DELETED ACCOUNTS HISTORY");
+        titleLabel.setFont(new Font("Consolas", Font.BOLD, 24));
+        titleLabel.setForeground(NEON_CYAN);
+        titlePanel.add(titleLabel);
+
+        // Create table model for deleted accounts
+        String[] columnNames = {"Account Number", "Account Holder", "Final Balance", "Deletion Time", "Reason"};
+        deletedAccountModel = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+
+        // Create table with custom rendering
+        JTable deletedAccountsTable = new JTable(deletedAccountModel) {
+            @Override
+            public Component prepareRenderer(javax.swing.table.TableCellRenderer renderer, int row, int column) {
+                Component comp = super.prepareRenderer(renderer, row, column);
+                comp.setBackground(new Color(30, 40, 50));
+                comp.setForeground(NEON_CYAN);
+                return comp;
+            }
+        };
+        deletedAccountsTable.setBackground(new Color(30, 40, 50));
+        deletedAccountsTable.setForeground(NEON_CYAN);
+        deletedAccountsTable.setSelectionBackground(new Color(0, 100, 150));
+        deletedAccountsTable.setSelectionForeground(Color.WHITE);
+        deletedAccountsTable.setFont(new Font("Consolas", Font.PLAIN, 14));
+        deletedAccountsTable.getTableHeader().setBackground(new Color(40, 50, 60));
+        deletedAccountsTable.getTableHeader().setForeground(NEON_CYAN);
+        deletedAccountsTable.getTableHeader().setFont(new Font("Consolas", Font.BOLD, 14));
+
+        // Add table to scroll pane
+        JScrollPane scrollPane = new JScrollPane(deletedAccountsTable);
+        scrollPane.getViewport().setBackground(new Color(20, 30, 40));
+        scrollPane.setBorder(BorderFactory.createLineBorder(BORDER_COLOR));
+
+        // Create button panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        buttonPanel.setOpaque(false);
+
+        JButton restoreButton = createFuturisticButton("Restore Account");
+        restoreButton.addActionListener(e -> {
+            int selectedRow = deletedAccountsTable.getSelectedRow();
+            if (selectedRow >= 0) {
+                String accountNumber = (String) deletedAccountsTable.getValueAt(selectedRow, 0);
+                deletedAccountManager.restoreAccount(accountNumber).ifPresent(deletedAccount -> {
+                    Account restoredAccount = new Account(
+                        deletedAccount.getAccountNumber(),
+                        deletedAccount.getAccountHolder(),
+                        deletedAccount.getFinalBalance(), accountNumber);
+                    accounts.put(accountNumber, restoredAccount);
+                    refreshDeletedAccountsTable();
+                    JOptionPane.showMessageDialog(this,
+                        "Account restored successfully!",
+                        "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
+                });
+            } else {
+                JOptionPane.showMessageDialog(this,
+                    "Please select an account to restore",
+                    "No Selection",
+                    JOptionPane.WARNING_MESSAGE);
+            }
+        });
+
+        JButton refreshButton = createFuturisticButton("Refresh");
+        refreshButton.addActionListener(e -> refreshDeletedAccountsTable());
+
+        JButton backButton = createFuturisticButton("Back");
+        backButton.addActionListener(e -> cardLayout.show(mainPanel, "dashboard"));
+
+        buttonPanel.add(restoreButton);
+        buttonPanel.add(refreshButton);
+        buttonPanel.add(backButton);
+
+        // Add components to panel
+        panel.add(titlePanel, BorderLayout.NORTH);
+        panel.add(scrollPane, BorderLayout.CENTER);
+        panel.add(buttonPanel, BorderLayout.SOUTH);
+
+        mainPanel.add(panel, "deletedAccounts");
+        refreshDeletedAccountsTable();
+    }
+
+    private void refreshDeletedAccountsTable() {
+        deletedAccountModel.setRowCount(0);
+        for (DeletedAccount account : deletedAccountManager.getDeletedAccounts()) {
+            deletedAccountModel.addRow(new Object[]{
+                account.getAccountNumber(),
+                account.getAccountHolder(),
+                String.format("₱%.2f", account.getFinalBalance()),
+                account.getDeletionTime().toString(),
+                account.getDeletionReason()
+            });
+        }
+    }
+
+    // Class fields for dashboard components
+    private JTable accountTable;
+    private DefaultTableModel transactionModel;
+    private JPanel crudPanel;
+    private JSplitPane splitPane;
+
+    private void createDashboardPanel() {
+        JPanel dashboardPanel = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                GradientPaint gradient = new GradientPaint(
+                    0, 0, new Color(20, 30, 40),
+                    getWidth(), getHeight(), new Color(40, 50, 70));
+                g2d.setPaint(gradient);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+                
                 g2d.setColor(new Color(60, 70, 90, 30));
                 int gridSize = 30;
                 for (int i = 0; i < getWidth(); i += gridSize) {
@@ -285,8 +423,8 @@ public class AdminInterface extends JFrame {
         dashboardPanel.setBackground(new Color(20, 30, 40));
         dashboardPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Create table model for user accounts with non-editable cells
-        DefaultTableModel accountModel = new DefaultTableModel(
+        // Initialize accountModel and accountTable
+        accountModel = new DefaultTableModel(
             new String[]{"Account Number", "Account Holder", "Balance", "PIN"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -294,7 +432,7 @@ public class AdminInterface extends JFrame {
             }
         };
 
-        JTable accountTable = new JTable(accountModel);
+        accountTable = new JTable(accountModel);
         accountTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         accountTable.setBackground(new Color(30, 40, 50));
         accountTable.setForeground(Color.WHITE);
@@ -304,21 +442,12 @@ public class AdminInterface extends JFrame {
         accountTable.getTableHeader().setForeground(NEON_CYAN);
         accountTable.getTableHeader().setFont(new Font("Consolas", Font.BOLD, 14));
         
-        JScrollPane accountScrollPane = new JScrollPane(accountTable) {
-            @Override
-            protected void paintBorder(Graphics g) {
-                Graphics2D g2d = (Graphics2D) g;
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2d.setColor(BORDER_COLOR);
-                g2d.setStroke(new BasicStroke(2f));
-                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
-            }
-        };
+        JScrollPane accountScrollPane = new JScrollPane(accountTable);
         accountScrollPane.setBorder(BorderFactory.createEmptyBorder());
         accountScrollPane.getViewport().setBackground(new Color(30, 40, 50));
 
-        // Create transaction history table
-        DefaultTableModel transactionModel = new DefaultTableModel(
+        // Initialize transactionModel and table
+        transactionModel = new DefaultTableModel(
             new String[]{"Timestamp", "Type", "Amount", "Balance", "Description"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -335,51 +464,28 @@ public class AdminInterface extends JFrame {
         transactionTable.getTableHeader().setForeground(NEON_CYAN);
         transactionTable.getTableHeader().setFont(new Font("Consolas", Font.BOLD, 14));
         
-        JScrollPane transactionScrollPane = new JScrollPane(transactionTable) {
-            @Override
-            protected void paintBorder(Graphics g) {
-                Graphics2D g2d = (Graphics2D) g;
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2d.setColor(BORDER_COLOR);
-                g2d.setStroke(new BasicStroke(2f));
-                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
-            }
-        };
+        JScrollPane transactionScrollPane = new JScrollPane(transactionTable);
         transactionScrollPane.setBorder(BorderFactory.createEmptyBorder());
         transactionScrollPane.getViewport().setBackground(new Color(30, 40, 50));
 
-        // Create split pane
-        JSplitPane splitPane = new JSplitPane(
+        // Initialize splitPane
+        splitPane = new JSplitPane(
             JSplitPane.VERTICAL_SPLIT,
             accountScrollPane,
             transactionScrollPane);
         splitPane.setDividerLocation(200);
 
-        // Create CRUD buttons panel with futuristic style
-        JPanel crudPanel = new JPanel(new FlowLayout(FlowLayout.LEFT)) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2d = (Graphics2D) g;
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                
-                // Semi-transparent background
-                g2d.setColor(new Color(30, 40, 50, 200));
-                g2d.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 15, 15);
-                
-                // Glowing border
-                g2d.setColor(new Color(0, 200, 255, 100));
-                g2d.setStroke(new BasicStroke(2f));
-                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 15, 15);
-            }
-        };
+        // Initialize CRUD panel
+        crudPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         crudPanel.setOpaque(false);
-        
+
+        // Create and add buttons
         JButton createButton = createFuturisticButton("Create Account");
         JButton updateButton = createFuturisticButton("Update Account");
         JButton deleteButton = createFuturisticButton("Delete Account");
         JButton refreshButton = createFuturisticButton("Refresh");
         JButton logoutButton = createFuturisticButton("Logout");
+        JButton historyButton = createFuturisticButton("Deletion History");
 
         // Add action listeners
         createButton.addActionListener(e -> showCreateAccountDialog());
@@ -395,54 +501,120 @@ public class AdminInterface extends JFrame {
                 JOptionPane.showMessageDialog(this, "Please select an account to update");
             }
         });
-
-        deleteButton.addActionListener(e -> {
-            int row = accountTable.getSelectedRow();
-            if (row >= 0) {
-                String accNum = (String) accountTable.getValueAt(row, 0);
-                int confirm = JOptionPane.showConfirmDialog(this,
-                    "Are you sure you want to delete account " + accNum + "?",
-                    "Confirm Delete",
-                    JOptionPane.YES_NO_OPTION);
-                if (confirm == JOptionPane.YES_OPTION) {
-                    accounts.remove(accNum);
-                    refreshData(accountModel, transactionModel);
-                }
-            } else {
-                JOptionPane.showMessageDialog(this, "Please select an account to delete");
-            }
-        });
-
+        deleteButton.addActionListener(e -> showDeleteAccountDialog());
         refreshButton.addActionListener(_ -> refreshData(accountModel, transactionModel));
         logoutButton.addActionListener(_ -> {
             cardLayout.show(mainPanel, "login");
             accountModel.setRowCount(0);
             transactionModel.setRowCount(0);
         });
+        historyButton.addActionListener(e -> cardLayout.show(mainPanel, "deletedAccounts"));
 
-        // Add buttons to panels
+        // Add buttons to panel
         crudPanel.add(createButton);
         crudPanel.add(updateButton);
         crudPanel.add(deleteButton);
         crudPanel.add(refreshButton);
+        crudPanel.add(historyButton);
         crudPanel.add(logoutButton);
+
+        // Add components to dashboard
+        dashboardPanel.add(splitPane, BorderLayout.CENTER);
+        dashboardPanel.add(crudPanel, BorderLayout.SOUTH);
+
+        mainPanel.add(dashboardPanel, "dashboard");
+    }
+
+    private void showDeleteAccountDialog() {
+        int row = accountTable.getSelectedRow();
+        if (row < 0) {
+            JOptionPane.showMessageDialog(this, "Please select an account to delete");
+            return;
+        }
+
+        String accNum = (String) accountTable.getValueAt(row, 0);
+        Account account = accounts.get(accNum);
+
+        // Create custom dialog for deletion reason
+        JDialog dialog = new JDialog(this, "Delete Account", true);
+        dialog.setLayout(new BorderLayout());
+        dialog.getContentPane().setBackground(new Color(20, 30, 40));
+
+        JPanel contentPanel = new JPanel(new GridBagLayout());
+        contentPanel.setBackground(new Color(20, 30, 40));
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        gbc.insets = new Insets(0, 0, 20, 0);
+        gbc.anchor = GridBagConstraints.WEST;
+
+        JLabel confirmLabel = new JLabel("Are you sure you want to delete account " + accNum + "?");
+        confirmLabel.setForeground(NEON_CYAN);
+        confirmLabel.setFont(new Font("Consolas", Font.BOLD, 14));
+        contentPanel.add(confirmLabel, gbc);
+
+        gbc.gridy++;
+        JLabel reasonLabel = new JLabel("Deletion Reason:");
+        reasonLabel.setForeground(NEON_CYAN);
+        reasonLabel.setFont(new Font("Consolas", Font.BOLD, 14));
+        contentPanel.add(reasonLabel, gbc);
+
+        gbc.gridy++;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        JTextField reasonField = createFuturisticTextField();
+        contentPanel.add(reasonField, gbc);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
+        buttonPanel.setBackground(new Color(20, 30, 40));
+
+        JButton confirmButton = createFuturisticButton("Confirm");
+        JButton cancelButton = createFuturisticButton("Cancel");
+
+        confirmButton.addActionListener(e -> {
+            String reason = reasonField.getText().trim();
+            if (reason.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "Please provide a reason for deletion");
+                return;
+            }
+
+            deletedAccountManager.addDeletedAccount(account, reason);
+            accounts.remove(accNum);
+            refreshData(accountModel, transactionModel);
+            dialog.dispose();
+        });
+
+        cancelButton.addActionListener(e -> dialog.dispose());
+
+        buttonPanel.add(confirmButton);
+        buttonPanel.add(cancelButton);
+
+        dialog.add(contentPanel, BorderLayout.CENTER);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        dialog.pack();
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
 
         // Create top panel for buttons
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.add(crudPanel, BorderLayout.CENTER);
 
+        Container dashboardPanel = null;
         dashboardPanel.add(topPanel, BorderLayout.NORTH);
         dashboardPanel.add(splitPane, BorderLayout.CENTER);
 
         // Add selection listener to the account table
         accountTable.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
-                int row = accountTable.getSelectedRow();
-                if (row >= 0) {
-                    String accNum = (String) accountTable.getValueAt(row, 0);
-                    Account account = accounts.get(accNum);
-                    if (account != null) {
-                        displayTransactionHistory(account, transactionModel);
+int selectedRow = accountTable.getSelectedRow();
+                if (selectedRow >= 0) {
+                    String selectedAccNum = (String) accountTable.getValueAt(selectedRow, 0);
+                    Account selectedAccount = accounts.get(selectedAccNum);
+                    if (selectedAccount != null) {
+                        displayTransactionHistory(selectedAccount, transactionModel);
                     }
                 }
             }
