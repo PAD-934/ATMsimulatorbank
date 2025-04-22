@@ -5,6 +5,8 @@ import java.util.List;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.RenderingHints;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 
 public class Account {
@@ -13,6 +15,31 @@ public class Account {
     private double balance;
     private String accountHolder;
     private List<Transaction> transactionHistory;
+    private boolean blocked;
+    private boolean deleted;
+    private String deletionReason;
+    private int dailyTransactionCount;
+    private long lastTransactionDate;
+    private static final int MAX_DAILY_TRANSACTIONS = 10;
+    private static final String LOCALHOST = "127.0.0.1";
+    
+    public static boolean isLocalAccess() {
+        try {
+            InetAddress localHost = InetAddress.getLocalHost();
+            String hostAddress = localHost.getHostAddress();
+            return hostAddress.equals(LOCALHOST) || hostAddress.startsWith("192.168.") || hostAddress.startsWith("10.");
+        } catch (UnknownHostException e) {
+            return false;
+        }
+    }
+    
+    public static String validateAccount(String accountNumber) {
+        if (accountNumber == null || accountNumber.trim().isEmpty()) {
+            return "Account number cannot be empty";
+        }
+        // Add more validation rules as needed
+        return null; // null means validation passed
+    }
 
     public Account(String accountNumber, String pin, double balance, String accountHolder) {
         this.accountNumber = accountNumber;
@@ -20,6 +47,11 @@ public class Account {
         this.balance = balance;
         this.accountHolder = accountHolder;
         this.transactionHistory = new ArrayList<>();
+        this.blocked = false;
+        this.deleted = false;
+        this.deletionReason = null;
+        this.dailyTransactionCount = 0;
+        this.lastTransactionDate = System.currentTimeMillis();
         // Add initial deposit as first transaction
         addTransaction("INITIAL_DEPOSIT", balance, balance, "Account opening deposit");
     }
@@ -51,48 +83,67 @@ public class Account {
     }
 
     public void deposit(double amount) {
+        if (deleted) {
+            throw new IllegalStateException("Account has been deleted: " + deletionReason);
+        }
         if (amount <= 0) {
             throw new IllegalArgumentException("Deposit amount must be positive");
         }
+        checkTransactionLimit();
         this.balance += amount;
         addTransaction("DEPOSIT", amount, this.balance, "Cash deposit");
         TransactionHistory.saveTransaction(accountNumber, "DEPOSIT", amount, accountHolder);
+        updateTransactionCount();
     }
 
     public void withdraw(double amount) {
+        if (deleted) {
+            throw new IllegalStateException("Account has been deleted: " + deletionReason);
+        }
         if (amount <= 0) {
             throw new IllegalArgumentException("Withdrawal amount must be positive");
         }
         if (amount > this.balance) {
             throw new IllegalStateException("Insufficient funds");
         }
+        checkTransactionLimit();
         this.balance -= amount;
         addTransaction("WITHDRAWAL", amount, this.balance, "Cash withdrawal");
         TransactionHistory.saveTransaction(accountNumber, "WITHDRAWAL", amount, accountHolder);
+        updateTransactionCount();
     }
 
     public void transfer(double amount, Account recipient, String description) {
+        if (deleted) {
+            throw new IllegalStateException("Account has been deleted: " + deletionReason);
+        }
+        if (recipient.isDeleted()) {
+            throw new IllegalStateException("Recipient account has been deleted: " + recipient.getDeletionReason());
+        }
         if (amount <= 0) {
             throw new IllegalArgumentException("Transfer amount must be positive");
         }
         if (amount > this.balance) {
             throw new IllegalStateException("Insufficient funds for transfer");
         }
+        checkTransactionLimit();
         this.balance -= amount;
         recipient.balance += amount;
         
-        // Record transaction for sender with detailed description
-        String senderDesc = String.format("Transfer to Account %s (%s): %s", 
+        // Record transaction for sender with standardized receipt format
+        String senderDesc = String.format("TRANSFER TO:\n  Account: %s\n  Name: %s\n  Amount: ₱%.2f\n  Description: %s", 
             recipient.getAccountNumber(), 
             recipient.getAccountHolder(),
+            amount,
             description);
         addTransaction("TRANSFER_OUT", amount, this.balance, senderDesc);
         TransactionHistory.saveTransaction(accountNumber, "TRANSFER_OUT", amount, senderDesc);
         
-        // Record transaction for recipient with detailed description
-        String recipientDesc = String.format("Transfer from Account %s (%s): %s", 
+        // Record transaction for recipient with standardized receipt format
+        String recipientDesc = String.format("TRANSFER FROM:\n  Account: %s\n  Name: %s\n  Amount: ₱%.2f\n  Description: %s", 
             this.accountNumber,
             this.accountHolder,
+            amount,
             description);
         recipient.addTransaction("TRANSFER_IN", amount, recipient.balance, recipientDesc);
         TransactionHistory.saveTransaction(recipient.getAccountNumber(), "TRANSFER_IN", amount, recipientDesc);
@@ -174,8 +225,55 @@ public class Account {
     }
 
     public void ejectCard() {
-        addTransaction("CARD_EJECTED", 0.0, balance, "Card ejected from ATM");
-        TransactionHistory.saveTransaction(accountNumber, "CARD_EJECTED", 0.0, accountHolder);
+        if (!deleted) {
+            addTransaction("CARD_EJECTED", 0.0, balance, "Card ejected from ATM");
+            TransactionHistory.saveTransaction(accountNumber, "CARD_EJECTED", 0.0, accountHolder);
+        }
+    }
+
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public String getDeletionReason() {
+        return deletionReason;
+    }
+
+    public void setDeleted(boolean deleted, String reason) {
+        this.deleted = deleted;
+        this.deletionReason = reason;
+        if (deleted) {
+            addTransaction("ACCOUNT_DELETED", 0.0, balance, "Account deleted: " + reason);
+        }
+    }
+
+    private void checkTransactionLimit() {
+        long currentTime = System.currentTimeMillis();
+        long oneDayInMillis = 24 * 60 * 60 * 1000;
+
+        if (currentTime - lastTransactionDate > oneDayInMillis) {
+            dailyTransactionCount = 0;
+            lastTransactionDate = currentTime;
+        }
+
+        if (dailyTransactionCount >= MAX_DAILY_TRANSACTIONS) {
+            throw new IllegalStateException("Daily transaction limit reached. Please try again tomorrow.");
+        }
+    }
+
+    private void updateTransactionCount() {
+        dailyTransactionCount++;
+    }
+
+    public boolean isBlocked() {
+        return blocked;
+    }
+
+    public void setBlocked(boolean blocked) {
+        this.blocked = blocked;
+        String status = blocked ? "ACCOUNT_BLOCKED" : "ACCOUNT_UNBLOCKED";
+        addTransaction(status, 0.0, balance, blocked ? "Account blocked by admin" : "Account unblocked by admin");
+        TransactionHistory.saveTransaction(accountNumber, status, 0.0, accountHolder);
     }
 
     public List<Transaction> getTransactionHistory() {
@@ -188,7 +286,8 @@ public class Account {
     }
 
     public void addTransaction(Transaction transaction) {
-        
-        throw new UnsupportedOperationException("Unimplemented method 'addTransaction'");
+        if (transaction != null) {
+            transactionHistory.add(transaction);
+        }
     }
 }

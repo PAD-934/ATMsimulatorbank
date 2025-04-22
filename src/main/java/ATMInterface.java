@@ -27,8 +27,16 @@ public class ATMInterface extends JFrame {
     private JPanel cardPanel;
     private boolean cardInserted = false;
     
+    // Track login attempts and blocked accounts
+    private HashMap<String, Integer> loginAttempts;
+    private HashMap<String, Long> blockedAccounts;
+    private static final int MAX_LOGIN_ATTEMPTS = 3;
+    private static final long BLOCK_DURATION = 300000; // 5 minutes in milliseconds
+    
     public ATMInterface() {
         accounts = new HashMap<>();
+        loginAttempts = new HashMap<>();
+        blockedAccounts = new HashMap<>();
         loadAccounts();
         
         // Create splash screen first
@@ -40,20 +48,24 @@ public class ATMInterface extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
-        getContentPane().setBackground(new Color(100, 100, 100)); // Darker gray for ATM look
+        getContentPane().setBackground(new Color(220, 220, 220)); // Light gray for better visibility
 
-        // Adjust font sizes and colors for ATM look
+        // Adjust font sizes and colors for better visibility
         UIManager.put("Label.font", new Font("Consolas", Font.BOLD, 20));
         UIManager.put("Button.font", new Font("Consolas", Font.BOLD, 18));
         UIManager.put("TextField.font", new Font("Consolas", Font.BOLD, 18));
+        UIManager.put("Button.background", new Color(230, 230, 250)); // Light lavender for buttons
+        UIManager.put("Button.foreground", new Color(0, 0, 0)); // Black text for contrast
+        UIManager.put("TextField.background", new Color(255, 255, 255)); // White background for text fields
+        UIManager.put("TextField.foreground", new Color(0, 0, 0)); // Black text for contrast
 
         cardLayout = new CardLayout();
         mainPanel = new JPanel(cardLayout);
-        mainPanel.setBackground(new Color(100, 100, 100));
+        mainPanel.setBackground(new Color(240, 240, 240)); // Lighter gray for main panel
         
-        // Add border to simulate ATM frame
+        // Add border to simulate ATM frame with better visibility
         mainPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(50, 50, 50), 20),
+            BorderFactory.createLineBorder(new Color(180, 180, 180), 20),
             BorderFactory.createBevelBorder(BevelBorder.RAISED)
         ));
         
@@ -183,7 +195,7 @@ public class ATMInterface extends JFrame {
     }
     
     private void startSplashAnimation() {
-        splashTimer = new Timer(50, e -> {
+        splashTimer = new Timer(50, _ -> {
             if (glowIncreasing) {
                 glowIntensity += 0.05f;
                 if (glowIntensity >= 1.0f) {
@@ -225,6 +237,7 @@ public class ATMInterface extends JFrame {
     }
     
     private void simulateCardInsertion() {
+        
         if (!cardInserted) {
             cardInserted = true;
             cardPanel.setVisible(true);
@@ -365,15 +378,15 @@ public class ATMInterface extends JFrame {
 
     private JPanel createHardwarePanel() {
         JPanel hardwarePanel = new JPanel(new GridLayout(3, 1, 15, 15));
-        hardwarePanel.setBackground(new Color(100, 100, 100));
+        hardwarePanel.setBackground(new Color(220, 220, 220));
         hardwarePanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        // Create slots with 3D effect
+        // Create slots with 3D effect and better visibility
         String[] slots = {"RECEIPT", "CARD", "CASH"};
         Color[] slotColors = {
-            new Color(50, 50, 50),  // Receipt slot
-            new Color(40, 40, 40),  // Card slot
-            new Color(30, 30, 30)   // Cash dispenser
+            new Color(200, 200, 200),  // Receipt slot - lighter gray
+            new Color(190, 190, 190),  // Card slot - lighter gray
+            new Color(180, 180, 180)   // Cash dispenser - lighter gray
         };
 
         for (int i = 0; i < slots.length; i++) {
@@ -404,6 +417,15 @@ public class ATMInterface extends JFrame {
     }
 
     private void createLoginPanel() {
+        // Check if local access is allowed
+        if (!Account.isLocalAccess()) {
+            JOptionPane.showMessageDialog(null,
+                "Access is restricted to local network only.",
+                "Access Denied",
+                JOptionPane.ERROR_MESSAGE);
+            System.exit(1);
+        }
+        
         // Create card animation components
         cardPanel = new JPanel() {
             private float shine = 0.0f;
@@ -411,7 +433,7 @@ public class ATMInterface extends JFrame {
             private Timer shineTimer;
             
             {
-                shineTimer = new Timer(50, e -> {
+                shineTimer = new Timer(50, _ -> {
                     if (shineIncreasing) {
                         shine += 0.1f;
                         if (shine >= 1.0f) {
@@ -500,11 +522,24 @@ public class ATMInterface extends JFrame {
                 super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-                int w = getWidth(), h = getHeight();
-                GradientPaint gp = new GradientPaint(0, 0, new Color(40, 40, 40),
-                        0, h, new Color(20, 20, 20));
-                g2d.setPaint(gp);
-                g2d.fillRect(0, 0, w, h);
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Create futuristic gradient background
+                GradientPaint gradient = new GradientPaint(
+                    0, 0, new Color(20, 30, 40),
+                    getWidth(), getHeight(), new Color(40, 50, 70));
+                g2d.setPaint(gradient);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+                
+                // Add subtle grid effect
+                g2d.setColor(new Color(60, 70, 90, 30));
+                int gridSize = 20;
+                for (int i = 0; i < getWidth(); i += gridSize) {
+                    g2d.drawLine(i, 0, i, getHeight());
+                }
+                for (int i = 0; i < getHeight(); i += gridSize) {
+                    g2d.drawLine(0, i, getWidth(), i);
+                }
             }
         };
 
@@ -515,18 +550,28 @@ public class ATMInterface extends JFrame {
                 super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-                int w = getWidth(), h = getHeight();
-                GradientPaint gp = new GradientPaint(0, 0, new Color(30, 30, 30),
-                        w, h, new Color(15, 15, 15));
-                g2d.setPaint(gp);
-                g2d.fillRect(0, 0, w, h);
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Create modern dark gradient background
+                GradientPaint gradient = new GradientPaint(
+                    0, 0, new Color(30, 40, 50),
+                    getWidth(), getHeight(), new Color(50, 60, 80));
+                g2d.setPaint(gradient);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+                
+                // Add subtle highlight lines
+                g2d.setColor(new Color(100, 150, 200, 20));
+                for (int i = 0; i < getHeight(); i += 40) {
+                    g2d.drawLine(0, i, getWidth(), i);
+                }
             }
         };
         
         screenPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(0, 100, 0), 2),
+            BorderFactory.createLineBorder(new Color(0, 150, 255), 2),
             BorderFactory.createEmptyBorder(20, 20, 20, 20)
         ));
+        screenPanel.setOpaque(false);
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(15, 30, 15, 30);
@@ -552,7 +597,7 @@ public class ATMInterface extends JFrame {
             }
         };
         titleLabel.setFont(new Font("Consolas", Font.BOLD, 24));
-        titleLabel.setForeground(new Color(0, 255, 0));
+        titleLabel.setForeground(new Color(0, 0, 139));
         titleLabel.setHorizontalAlignment(JLabel.CENTER);
         
         // Modern input fields with glowing labels
@@ -618,7 +663,7 @@ public class ATMInterface extends JFrame {
         
         // Side buttons panel (right)
         JPanel rightButtonsPanel = new JPanel(new GridLayout(4, 1, 10, 10));
-        rightButtonsPanel.setBackground(new Color(200, 200, 200));
+        rightButtonsPanel.setBackground(new Color(230, 230, 230));
         
         JButton loginButton = createATMButton("LOGIN", new Color(0, 100, 0));
         JButton signUpButton = createATMButton("NEW ACCOUNT", new Color(0, 0, 100));
@@ -648,8 +693,30 @@ public class ATMInterface extends JFrame {
             String pin = new String(pinField.getPassword());
             
             simulateCardInsertion();
+            
+            // Check if account is blocked
+            if (blockedAccounts.containsKey(accNum)) {
+                long blockTime = blockedAccounts.get(accNum);
+                long currentTime = System.currentTimeMillis();
+                if (currentTime - blockTime < BLOCK_DURATION) {
+                    long remainingTime = (BLOCK_DURATION - (currentTime - blockTime)) / 1000;
+                    simulateCardEjection();
+                    JOptionPane.showMessageDialog(loginPanel,
+                        String.format("Account is temporarily blocked. Please try again in %d seconds.", remainingTime),
+                        "Account Blocked",
+                        JOptionPane.WARNING_MESSAGE);
+                    return;
+                } else {
+                    // Unblock account if block duration has passed
+                    blockedAccounts.remove(accNum);
+                    loginAttempts.remove(accNum);
+                }
+            }
+            
             if (validateLogin(accNum, pin)) {
                 currentAccount = accounts.get(accNum);
+                // Reset login attempts on successful login
+                loginAttempts.remove(accNum);
                 // Update welcome label in main menu
                 updateWelcomeLabel();
                 cardLayout.show(mainPanel, "mainMenu");
@@ -657,11 +724,25 @@ public class ATMInterface extends JFrame {
                 accField.setText("");
                 pinField.setText("");
             } else {
+                // Increment login attempts
+                int attempts = loginAttempts.getOrDefault(accNum, 0) + 1;
+                loginAttempts.put(accNum, attempts);
+                
                 simulateCardEjection();
-                JOptionPane.showMessageDialog(loginPanel, 
-                    "Invalid Account Number or PIN", 
-                    "Login Error", 
-                    JOptionPane.ERROR_MESSAGE);
+                if (attempts >= MAX_LOGIN_ATTEMPTS) {
+                    // Block account
+                    blockedAccounts.put(accNum, System.currentTimeMillis());
+                    JOptionPane.showMessageDialog(loginPanel,
+                        "Too many failed attempts. Account is blocked for 5 minutes.",
+                        "Account Blocked",
+                        JOptionPane.WARNING_MESSAGE);
+                } else {
+                    JOptionPane.showMessageDialog(loginPanel,
+                        String.format("Invalid Account Number or PIN. %d attempts remaining.",
+                            MAX_LOGIN_ATTEMPTS - attempts),
+                        "Login Error",
+                        JOptionPane.ERROR_MESSAGE);
+                }
             }
         });
 
@@ -945,18 +1026,28 @@ public class ATMInterface extends JFrame {
                 super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-                int w = getWidth(), h = getHeight();
-                GradientPaint gp = new GradientPaint(0, 0, new Color(30, 30, 30),
-                        w, h, new Color(15, 15, 15));
-                g2d.setPaint(gp);
-                g2d.fillRect(0, 0, w, h);
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Create modern dark gradient background
+                GradientPaint gradient = new GradientPaint(
+                    0, 0, new Color(30, 40, 50),
+                    getWidth(), getHeight(), new Color(50, 60, 80));
+                g2d.setPaint(gradient);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+                
+                // Add subtle highlight lines
+                g2d.setColor(new Color(100, 150, 200, 20));
+                for (int i = 0; i < getHeight(); i += 40) {
+                    g2d.drawLine(0, i, getWidth(), i);
+                }
             }
         };
         screenPanel.setPreferredSize(new Dimension(600, 400));
         screenPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(0, 100, 0), 2),
+            BorderFactory.createLineBorder(new Color(0, 150, 255), 2),
             BorderFactory.createEmptyBorder(20, 20, 20, 20)
         ));
+        screenPanel.setOpaque(false);
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 30, 10, 30);
@@ -1060,7 +1151,7 @@ public class ATMInterface extends JFrame {
 
         // Side buttons panel
         JPanel rightButtonsPanel = new JPanel(new GridLayout(4, 1, 10, 10));
-        rightButtonsPanel.setBackground(new Color(200, 200, 200));
+        rightButtonsPanel.setBackground(new Color(230, 230, 230));
         
         JButton createButton = createATMButton("CREATE", new Color(0, 100, 0));
         JButton backButton = createATMButton("BACK", new Color(139, 0, 0));
@@ -1223,17 +1314,70 @@ public class ATMInterface extends JFrame {
     private static final long LOCKOUT_DURATION = 300000; // 5 minutes in milliseconds
 
     private boolean validateLogin(String accNum, String pin) {
-        if (accNum.isEmpty() || pin.isEmpty()) {
+        if (accNum.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                "Account number cannot be empty!",
+                "Login Error",
+                JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+        if (pin.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                "PIN cannot be empty!",
+                "Login Error",
+                JOptionPane.ERROR_MESSAGE);
             return false;
         }
 
-        // Check if account is locked
+        // Check if account exists
+        Account acc = accounts.get(accNum);
+        if (acc == null) {
+            // Check if account was deleted
+            DeletedAccountManager deletedManager = new DeletedAccountManager();
+            Optional<DeletedAccount> deletedAccount = deletedManager.getDeletedAccounts().stream()
+                .filter(a -> a.getAccountNumber().equals(accNum))
+                .findFirst();
+            
+            if (deletedAccount.isPresent()) {
+                JOptionPane.showMessageDialog(this,
+                    "This account has been deleted by admin: " + deletedAccount.get().getDeletionReason(),
+                    "Account Deleted",
+                    JOptionPane.ERROR_MESSAGE);
+                return false;
+            }
+            
+            JOptionPane.showMessageDialog(this,
+                "Account does not exist. Please check your account number.",
+                "Login Error",
+                JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+
+        // Check if account is deleted
+        if (acc.isDeleted()) {
+            JOptionPane.showMessageDialog(this,
+                "This account has been deleted by admin: " + acc.getDeletionReason(),
+                "Account Deleted",
+                JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+
+        // Check if account is blocked by admin
+        if (acc.isBlocked()) {
+            JOptionPane.showMessageDialog(this,
+                "This account has been blocked by the administrator.\nPlease contact customer service for assistance.",
+                "Account Blocked",
+                JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+
+        // Check if account is temporarily locked due to failed attempts
         Long lockTime = lockoutTime.get(accNum);
         if (lockTime != null) {
             long remainingTime = (lockTime + LOCKOUT_DURATION - System.currentTimeMillis()) / 1000;
             if (remainingTime > 0) {
                 JOptionPane.showMessageDialog(this,
-                    String.format("Account is locked. Please try again in %d seconds.", remainingTime),
+                    String.format("Account is temporarily locked. Please try again in %d seconds.", remainingTime),
                     "Login Error",
                     JOptionPane.ERROR_MESSAGE);
                 return false;
@@ -1244,8 +1388,7 @@ public class ATMInterface extends JFrame {
             }
         }
 
-        Account acc = accounts.get(accNum);
-        if (acc != null && acc.getPin().equals(pin)) {
+        if (acc.getPin().equals(pin)) {
             // Reset failed attempts on successful login
             failedAttempts.remove(accNum);
             currentAccount = acc;
@@ -1311,7 +1454,7 @@ public class ATMInterface extends JFrame {
         topPanel.setBackground(new Color(0, 10, 20)); // Deep space blue
         topPanel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(0, 150, 255), 2), // Neon blue border
-            BorderFactory.createEmptyBorder(20, 20, 20, 20)
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
 
         // Enhanced clock panel with pulsing effect
@@ -1323,9 +1466,9 @@ public class ATMInterface extends JFrame {
         dateLabel.setFont(new Font("Consolas", Font.BOLD, 20));
         
         // Create pulsing effect for clock
-        Timer pulseTimer = new Timer(1000, e -> {
+        Timer pulseTimer = new Timer(1000, _ -> {
             clockLabel.setForeground(new Color(0, 255, 255)); // Cyan
-            new Timer(500, e2 -> {
+            new Timer(500, _ -> {
                 clockLabel.setForeground(new Color(0, 200, 200));
             }).start();
         });
@@ -1338,7 +1481,7 @@ public class ATMInterface extends JFrame {
         clockPanel.add(dateLabel);
 
         // Update clock with milliseconds for futuristic feel
-        Timer clockTimer = new Timer(50, e -> {
+        Timer clockTimer = new Timer(50, _ -> {
             Calendar cal = Calendar.getInstance();
             clockLabel.setText(String.format("%02d:%02d:%02d.%03d", 
                 cal.get(Calendar.HOUR_OF_DAY),
@@ -1358,7 +1501,7 @@ public class ATMInterface extends JFrame {
         welcomePanel.setBackground(new Color(0, 20, 40));
         welcomePanel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(0, 255, 255), 3),
-            BorderFactory.createEmptyBorder(20, 20, 20, 20)
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
 
         // Dynamic welcome message with user's name
@@ -1380,7 +1523,7 @@ public class ATMInterface extends JFrame {
         accountLabel.setHorizontalAlignment(JLabel.CENTER);
 
         // Add glow effect to welcome message
-        Timer glowTimer = new Timer(1500, e -> {
+        Timer glowTimer = new Timer(1500, _ -> {
             float[] hsb = Color.RGBtoHSB(0, 255, 255, null);
             userLabel.setForeground(Color.getHSBColor(hsb[0], hsb[1], 
                 (float) (0.7 + 0.3 * Math.sin(System.currentTimeMillis() / 500.0))));
@@ -1415,7 +1558,7 @@ public class ATMInterface extends JFrame {
         tickerLabel.setFont(new Font("Consolas", Font.PLAIN, 16));
         tickerLabel.setForeground(new Color(0, 200, 255));
         
-        Timer scrollTimer = new Timer(50, e -> {
+        Timer scrollTimer = new Timer(50, _ -> {
             String text = tickerLabel.getText();
             tickerLabel.setText(text.substring(1) + text.charAt(0));
         });
@@ -1454,12 +1597,12 @@ public class ATMInterface extends JFrame {
             BorderFactory.createLineBorder(new Color(0, 150, 255, 100), 5),
             BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(0, 100, 255, 50), 3),
-                BorderFactory.createEmptyBorder(20, 20, 20, 20)
+                BorderFactory.createEmptyBorder(10, 10, 10, 10)
             )
         ));
 
         // Holographic display content with modern grid layout and scanline effect
-        final JPanel displayContent = new JPanel(new GridLayout(5, 1, 20, 20)) {
+        final JPanel displayContent = new JPanel(new GridLayout(5, 1, 10, 10)) {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
@@ -1474,11 +1617,11 @@ public class ATMInterface extends JFrame {
         displayContent.setBackground(new Color(0, 15, 35));
         displayContent.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(0, 200, 255, 150), 2),
-            BorderFactory.createEmptyBorder(20, 20, 20, 20)
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
         
         // Add scanline effect timer
-        Timer scanlineTimer = new Timer(50, e -> displayContent.repaint());
+        Timer scanlineTimer = new Timer(50, _ -> displayContent.repaint());
         scanlineTimer.start();
 
         // Dynamic balance display with advanced holographic effect
@@ -1518,7 +1661,7 @@ public class ATMInterface extends JFrame {
         ));
         
         // Add dynamic glow effect with enhanced visibility and pulsing background
-        Timer balanceEffectTimer = new Timer(50, e -> {
+        Timer balanceEffectTimer = new Timer(50, _ -> {
             long time = System.currentTimeMillis();
             float pulse = (float) (0.9 + 0.1 * Math.sin(time / 800.0));
             balanceAmount.setForeground(new Color(0, (int)(255 * pulse), 0));
@@ -1578,7 +1721,7 @@ public class ATMInterface extends JFrame {
         promoLabel.setHorizontalAlignment(JLabel.CENTER);
         
         // Add shimmer effect to promo
-        Timer promoTimer = new Timer(100, e -> {
+        Timer promoTimer = new Timer(100, _ -> {
             String text = promoLabel.getText();
             if (text.startsWith("✧")) {
                 promoLabel.setText("✦" + text.substring(1, text.length() - 1) + "✦");
@@ -1618,21 +1761,21 @@ public class ATMInterface extends JFrame {
         mainOptionsPanel.add(liveScreenPanel, BorderLayout.CENTER);
 
         // Left side buttons with enhanced size
-        JPanel leftButtons = new JPanel(new GridLayout(4, 1, 25, 25));
+        JPanel leftButtons = new JPanel(new GridLayout(4, 1, 15, 15));
         leftButtons.setBackground(Color.BLACK);
-        leftButtons.setBorder(BorderFactory.createEmptyBorder(30, 40, 30, 40));
+        leftButtons.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
 
         // Right side buttons with enhanced size
-        JPanel rightButtons = new JPanel(new GridLayout(4, 1, 25, 25));
+        JPanel rightButtons = new JPanel(new GridLayout(4, 1, 15, 15));
         rightButtons.setBackground(Color.BLACK);
-        rightButtons.setBorder(BorderFactory.createEmptyBorder(30, 40, 30, 40));
+        rightButtons.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
 
         // Transaction options - Core banking features
         String[][] options = {
             {"WITHDRAW", "DEPOSIT"},
             {"TRANSFER FUNDS", "CHECK BALANCE"},
             {"TRANSACTION HISTORY", "CHANGE PIN"},
-            {"CANCEL", "EXIT"}
+            {"LOG OUT", "EXIT"}
         };
 
         for (String[] row : options) {
@@ -1778,7 +1921,7 @@ public class ATMInterface extends JFrame {
                 loadingDialog.add(loadingPanel);
                 
                 // Create timer to simulate loading and record transaction
-                Timer loadingTimer = new Timer(1500, e -> {
+                Timer loadingTimer = new Timer(1500, _ -> {
                     loadingDialog.dispose();
                     checkBalance();
                     
@@ -1798,7 +1941,9 @@ public class ATMInterface extends JFrame {
             }
             case "TRANSACTION HISTORY" -> showMiniStatement();
             case "CHANGE PIN" -> showChangePinDialog();
-            case "CANCEL", "EXIT" -> showLogoutConfirmation();
+            case "LOG OUT" -> showLogoutConfirmation();
+            case "EXIT" -> showExitConfirmation();
+            case "CANCEL" -> cardLayout.show(mainPanel, "mainMenu");
         }
     }
 
@@ -1836,7 +1981,7 @@ public class ATMInterface extends JFrame {
         confirmPanel.setBackground(new Color(0, 20, 40));
         confirmPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        JLabel confirmLabel = new JLabel("Are you sure you want to logout?");
+        JLabel confirmLabel = new JLabel("Are you sure you want to log out?");
         confirmLabel.setFont(new Font("Consolas", Font.BOLD, 24));
         confirmLabel.setForeground(new Color(0, 255, 255));
         confirmLabel.setHorizontalAlignment(JLabel.CENTER);
@@ -1853,7 +1998,32 @@ public class ATMInterface extends JFrame {
         if (choice == JOptionPane.YES_OPTION) {
             logout();
             simulateCardEjection();
-            Timer exitTimer = new Timer(1000, evt -> System.exit(0));
+            cardLayout.show(mainPanel, "login");
+        }
+    }
+
+    private void showExitConfirmation() {
+        JPanel confirmPanel = new JPanel(new BorderLayout(10, 10));
+        confirmPanel.setBackground(new Color(0, 20, 40));
+        confirmPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        JLabel confirmLabel = new JLabel("Are you sure you want to exit?");
+        confirmLabel.setFont(new Font("Consolas", Font.BOLD, 24));
+        confirmLabel.setForeground(new Color(0, 255, 255));
+        confirmLabel.setHorizontalAlignment(JLabel.CENTER);
+        confirmPanel.add(confirmLabel, BorderLayout.CENTER);
+
+        int choice = JOptionPane.showConfirmDialog(
+            this,
+            confirmPanel,
+            "Exit Confirmation",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE
+        );
+
+        if (choice == JOptionPane.YES_OPTION) {
+            simulateCardEjection();
+            Timer exitTimer = new Timer(1000, _ -> System.exit(0));
             exitTimer.setRepeats(false);
             exitTimer.start();
         }
@@ -2074,7 +2244,10 @@ public class ATMInterface extends JFrame {
             showSuccessScreen("PIN changed successfully!", "PIN CHANGE", 0.0);
         });
 
-        cancelButton.addActionListener(_ -> cardLayout.show(mainPanel, "mainMenu"));
+        cancelButton.addActionListener(_ -> {
+            logout();
+            simulateCardEjection();
+        });
     }
 
     private boolean isValidPin(String pin) {
@@ -2094,25 +2267,38 @@ public class ATMInterface extends JFrame {
     private void generateReceipt(String transactionType, double amount) {
         JPanel receiptPanel = createATMScreen("TRANSACTION RECEIPT");
         
-        // Create a button panel at the top
-        JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 20, 0));
+        // Create a button panel at the top with copy option for transfers
+        JPanel buttonPanel = new JPanel(new GridLayout(1, transactionType.equals("TRANSFER") ? 3 : 2, 20, 0));
         buttonPanel.setBackground(Color.BLACK);
         buttonPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         
         // Create larger buttons
         JButton backButton = createATMButton("BACK", new Color(139, 0, 0));
         JButton doneButton = createATMButton("DONE", new Color(0, 100, 0));
+        JButton copyButton = null;
+        if (transactionType.equals("TRANSFER")) {
+            copyButton = createATMButton("COPY", new Color(0, 100, 130));
+        }
         
         // Set preferred size for larger buttons
-        Dimension buttonSize = new Dimension(200, 60);
+        Dimension buttonSize = new Dimension(150, 60);
         backButton.setPreferredSize(buttonSize);
         doneButton.setPreferredSize(buttonSize);
+        if (copyButton != null) {
+            copyButton.setPreferredSize(buttonSize);
+        }
         
         buttonPanel.add(backButton);
+        if (copyButton != null) {
+            buttonPanel.add(copyButton);
+        }
         buttonPanel.add(doneButton);
         
         // Add button panel to the top
         receiptPanel.add(buttonPanel, BorderLayout.NORTH);
+        
+        // Store receipt content for copy functionality
+        StringBuilder receiptContent = new StringBuilder();
         
         JPanel contentPanel = new JPanel(new GridBagLayout());
         contentPanel.setBackground(Color.BLACK);
@@ -2121,30 +2307,95 @@ public class ATMInterface extends JFrame {
         gbc.gridwidth = GridBagConstraints.REMAINDER;
         gbc.anchor = GridBagConstraints.CENTER;
 
-        // Receipt header
+        // Receipt header with increased spacing
+        addReceiptLine(contentPanel, "\n", gbc, 14); // Add extra space at top
+        receiptContent.append("\n");
         addReceiptLine(contentPanel, "Banco De AU(BDA) ATM Machine", gbc, 20);
-        addReceiptLine(contentPanel, "------------------------", gbc, 16);
-        addReceiptLine(contentPanel, "Date: " + java.time.LocalDateTime.now().format(
-            java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), gbc, 14);
-        addReceiptLine(contentPanel, "------------------------", gbc, 16);
+        receiptContent.append("Banco De AU(BDA) ATM Machine\n");
+        addReceiptLine(contentPanel, "\n", gbc, 14); // Add space after title
+        receiptContent.append("\n");
+        addReceiptLine(contentPanel, "================================", gbc, 16);
+        receiptContent.append("================================\n");
         
-        // Transaction details
-        addReceiptLine(contentPanel, "TRANSACTION TYPE:", gbc, 16);
-        addReceiptLine(contentPanel, transactionType, gbc, 18);
-        addReceiptLine(contentPanel, "AMOUNT: ₱" + String.format("%,.2f", amount), gbc, 16);
-        addReceiptLine(contentPanel, "BALANCE: ₱" + String.format("%,.2f", currentAccount.getBalance()), gbc, 16);
-        addReceiptLine(contentPanel, "------------------------", gbc, 16);
+        String timestamp = java.time.LocalDateTime.now().format(
+            java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        addReceiptLine(contentPanel, "Date: " + timestamp, gbc, 14);
+        receiptContent.append("Date: " + timestamp + "\n");
+        addReceiptLine(contentPanel, "================================", gbc, 16);
+        receiptContent.append("================================\n");
+        addReceiptLine(contentPanel, "\n", gbc, 14);
+        receiptContent.append("\n");
         
-        // Account info (masked)
-        addReceiptLine(contentPanel, "Account: ****" + 
+        // Transaction details with centered type and decorative borders
+        addReceiptLine(contentPanel, "----------------------------------", gbc, 16);
+        receiptContent.append("----------------------------------\n");
+        addReceiptLine(contentPanel, String.format("%s%s%s", "      ", transactionType, "      "), gbc, 20);
+        receiptContent.append(String.format("%s%s%s\n", "      ", transactionType, "      "));
+        addReceiptLine(contentPanel, "----------------------------------", gbc, 16);
+        receiptContent.append("----------------------------------\n");
+        addReceiptLine(contentPanel, "\n", gbc, 14);
+        receiptContent.append("\n");
+        addReceiptLine(contentPanel, String.format("%-15s ₱%,16.2f", "AMOUNT:", amount), gbc, 16);
+        receiptContent.append(String.format("%-15s ₱%,16.2f\n", "AMOUNT:", amount));
+        addReceiptLine(contentPanel, String.format("%-15s ₱%,16.2f", "BALANCE:", currentAccount.getBalance()), gbc, 16);
+        receiptContent.append(String.format("%-15s ₱%,16.2f\n", "BALANCE:", currentAccount.getBalance()));
+        addReceiptLine(contentPanel, "\n", gbc, 14);
+        receiptContent.append("\n");
+        addReceiptLine(contentPanel, "================================", gbc, 16);
+        receiptContent.append("================================\n");
+        
+        // Account info (masked) with consistent spacing
+        addReceiptLine(contentPanel, "\n", gbc, 14);
+        receiptContent.append("\n");
+        String maskedAccount = String.format("Account: ****%s",
             currentAccount.getAccountNumber().substring(
-                Math.max(0, currentAccount.getAccountNumber().length() - 4)), gbc, 14);
+                Math.max(0, currentAccount.getAccountNumber().length() - 4)));
+        addReceiptLine(contentPanel, maskedAccount, gbc, 14);
+        receiptContent.append(maskedAccount + "\n");
+        addReceiptLine(contentPanel, "\n", gbc, 14);
+        receiptContent.append("\n");
         
-        // Footer
+        // Footer with proper spacing
+        addReceiptLine(contentPanel, "================================", gbc, 16);
+        receiptContent.append("================================\n");
         addReceiptLine(contentPanel, "Thank you for using our ATM", gbc, 14);
+        receiptContent.append("Thank you for using our ATM\n");
         addReceiptLine(contentPanel, "Please take your card", gbc, 14);
+        receiptContent.append("Please take your card\n");
+        addReceiptLine(contentPanel, "\n", gbc, 14);
+        receiptContent.append("\n");
 
-        receiptPanel.add(contentPanel, BorderLayout.CENTER);
+        // Add copy button functionality
+        if (copyButton != null) {
+            copyButton.addActionListener(_ -> {
+                playSound("printer");
+                JPanel copyPanel = new JPanel(new GridBagLayout());
+                copyPanel.setBackground(Color.BLACK);
+                GridBagConstraints copyGbc = new GridBagConstraints();
+                copyGbc.insets = new Insets(10, 20, 10, 20);
+                copyGbc.gridwidth = GridBagConstraints.REMAINDER;
+                copyGbc.anchor = GridBagConstraints.CENTER;
+
+                // Add copy watermark to each line
+                String[] lines = receiptContent.toString().split("\n");
+                for (String line : lines) {
+                    if (!line.trim().isEmpty()) {
+                        addReceiptLine(copyPanel, line + " (COPY)", copyGbc, 14);
+                    } else {
+                        addReceiptLine(copyPanel, line, copyGbc, 14);
+                    }
+                }
+
+                // Show copy in a new window
+                JFrame copyFrame = new JFrame("Receipt Copy");
+                copyFrame.setSize(400, 600);
+                copyFrame.setLocationRelativeTo(null);
+                copyFrame.add(new JScrollPane(copyPanel));
+                copyFrame.setVisible(true);
+            });
+        }
+
+        receiptPanel.add(new JScrollPane(contentPanel), BorderLayout.CENTER);
         mainPanel.add(receiptPanel, "receipt");
         cardLayout.show(mainPanel, "receipt");
 
@@ -2161,6 +2412,7 @@ public class ATMInterface extends JFrame {
             playSound("button");
             cardLayout.show(mainPanel, "mainMenu");
         });
+
     }
 
     private void addReceiptLine(JPanel panel, String text, GridBagConstraints gbc, int fontSize) {
@@ -2280,7 +2532,7 @@ public class ATMInterface extends JFrame {
         final int[] progress = {0};
         final float[] hue = {0f};
 
-        dotTimer.addActionListener(e -> {
+        dotTimer.addActionListener(_ -> {
             dots[0] = (dots[0] + 1) % 4;
             StringBuilder text = new StringBuilder("SCANNING");
             for (int i = 0; i < dots[0]; i++) {
@@ -2293,7 +2545,7 @@ public class ATMInterface extends JFrame {
             processingLabel.setForeground(Color.getHSBColor(hue[0], 1f, 1f));
         });
 
-        progressTimer.addActionListener(e -> {
+        progressTimer.addActionListener(_ -> {
             progress[0] += 4;
             progressBar.setValue(progress[0]);
             progressBar.setString(progress[0] + "%");
@@ -2345,7 +2597,7 @@ public class ATMInterface extends JFrame {
         displayPanel.setBackground(new Color(0, 15, 30));
         displayPanel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(0, 200, 255), 2),
-            BorderFactory.createEmptyBorder(20, 20, 20, 20)
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
 
         // Create balance display with holographic effect
@@ -2429,7 +2681,7 @@ public class ATMInterface extends JFrame {
 
         for (int amount : quickAmounts) {
             JButton quickButton = createTransactionButton(String.format("₱%,d", amount));
-            quickButton.addActionListener(e -> {
+            quickButton.addActionListener(_ -> {
                 amountField.setText(String.valueOf(amount));
                 playSound("button");
             });
@@ -2570,7 +2822,7 @@ public class ATMInterface extends JFrame {
         displayPanel.setBackground(new Color(0, 15, 30));
         displayPanel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(0, 200, 255), 2),
-            BorderFactory.createEmptyBorder(20, 20, 20, 20)
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
 
         // Create balance display with holographic effect
@@ -2675,7 +2927,7 @@ public class ATMInterface extends JFrame {
         depositPanel.add(contentPanel, BorderLayout.CENTER);
 
         // Add scanline animation
-        Timer scanlineTimer = new Timer(50, e -> displayPanel.repaint());
+        Timer scanlineTimer = new Timer(50, _ -> displayPanel.repaint());
         scanlineTimer.start();
 
         mainPanel.add(depositPanel, "deposit");
@@ -2707,7 +2959,10 @@ public class ATMInterface extends JFrame {
             }
         });
 
-        cancelButton.addActionListener(_ -> cardLayout.show(mainPanel, "mainMenu"));
+        cancelButton.addActionListener(_ -> {
+            logout();
+            simulateCardEjection();
+        });
     }
 
     private void showTransferDialog() {
@@ -2744,7 +2999,7 @@ public class ATMInterface extends JFrame {
         displayPanel.setBackground(new Color(0, 15, 30));
         displayPanel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(0, 200, 255), 2),
-            BorderFactory.createEmptyBorder(20, 20, 20, 20)
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
 
         // Create balance display with holographic effect
@@ -2957,25 +3212,34 @@ public class ATMInterface extends JFrame {
             }
         });
 
-        cancelButton.addActionListener(_ -> cardLayout.show(mainPanel, "mainMenu"));
+        cancelButton.addActionListener(_ -> {
+            logout();
+            simulateCardEjection();
+        });
     }
 
     private void showReceiptOptionScreen(String transactionType, double amount, String recipientInfo) {
-        JPanel receiptPanel = createATMScreen("TRANSACTION RECEIPT");
-        
-        // Create a button panel at the top
-        JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 20, 0));
+        JPanel receiptPanel = createATMScreen("TRANSACTION RECEIPT");        
+        // Create a button panel at the top with 3 buttons for transfer receipts
+        JPanel buttonPanel = new JPanel(new GridLayout(1, transactionType.equals("TRANSFER") ? 3 : 2, 20, 0));
         buttonPanel.setBackground(Color.BLACK);
         buttonPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         
         // Create larger buttons
         JButton backButton = createATMButton("BACK", new Color(139, 0, 0));
         JButton doneButton = createATMButton("DONE", new Color(0, 100, 0));
+        JButton copyButton = null;
+        if (transactionType.equals("TRANSFER")) {
+            copyButton = createATMButton("COPY RECEIPT", new Color(0, 100, 130));
+        }
         
         // Set preferred size for larger buttons
-        Dimension buttonSize = new Dimension(200, 60);
+        Dimension buttonSize = new Dimension(150, 60);
         backButton.setPreferredSize(buttonSize);
         doneButton.setPreferredSize(buttonSize);
+        if (copyButton != null) {
+            copyButton.setPreferredSize(buttonSize);
+        }
         
         buttonPanel.add(backButton);
         buttonPanel.add(doneButton);
@@ -2989,58 +3253,56 @@ public class ATMInterface extends JFrame {
         gbc.insets = new Insets(10, 20, 10, 20);
         gbc.anchor = GridBagConstraints.CENTER;
         
-        // Header with holographic effect
+        // Header with professional design
         JLabel headerLabel = new JLabel("BDA ATM MACHINE");
         headerLabel.setFont(new Font("Consolas", Font.BOLD, 24));
-        headerLabel.setForeground(new Color(0, 255, 255));
+        headerLabel.setForeground(new Color(0, 120, 160));
         gbc.gridy = GridBagConstraints.RELATIVE;
         contentPanel.add(headerLabel, gbc);
         
-        // Separator with LED effect
-        addReceiptLine(contentPanel, "═══════════════════════", gbc, 16);
+        // Professional separator
+        addReceiptLine(contentPanel, "══════════════════════════════", gbc, 16);
         
-        // Transaction timestamp with futuristic format
+        // Transaction timestamp with clear format
         addReceiptLine(contentPanel, "DATE: " + java.time.LocalDateTime.now().format(
-            java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")), gbc, 14);
-        addReceiptLine(contentPanel, "═══════════════════════", gbc, 16);
+            java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")), gbc, 14);
+        addReceiptLine(contentPanel, "══════════════════════════════", gbc, 16);
         
-        // Transaction details with neon glow
-        addReceiptLine(contentPanel, "TRANSACTION TYPE:", gbc, 16);
-        JLabel typeLabel = new JLabel(transactionType);
-        typeLabel.setFont(new Font("Consolas", Font.BOLD, 20));
-        typeLabel.setForeground(new Color(0, 255, 128));
-        contentPanel.add(typeLabel, gbc);
+        // Transaction details with centered type and decorative borders
+        addReceiptLine(contentPanel, "----------------------------------", gbc, 16);
+        addReceiptLine(contentPanel, String.format("%s%s%s", "      ", transactionType, "      "), gbc, 20);
+        addReceiptLine(contentPanel, "----------------------------------", gbc, 16);
+        addReceiptLine(contentPanel, "\n", gbc, 14);
         
-        addReceiptLine(contentPanel, "AMOUNT: ₱" + String.format("%,.2f", amount), gbc, 18);
+        // Amount with proper currency formatting
+        addReceiptLine(contentPanel, String.format("%-22s ₱%,15.2f", "AMOUNT:", amount), gbc, 18);
+        addReceiptLine(contentPanel, "----------------------------------", gbc, 16);
         
-        // Sender info with cyberpunk style
+        // Sender information
         addReceiptLine(contentPanel, "FROM:", gbc, 16);
-        JLabel senderLabel = new JLabel(currentAccount.getAccountHolder());
-        senderLabel.setFont(new Font("Consolas", Font.BOLD, 18));
-        senderLabel.setForeground(new Color(255, 255, 0));
-        contentPanel.add(senderLabel, gbc);
-        
-        addReceiptLine(contentPanel, "ACC: ****" + 
+        addReceiptLine(contentPanel, String.format("  %s", currentAccount.getAccountHolder()), gbc, 16);
+        addReceiptLine(contentPanel, String.format("  ACC: ****%s",
             currentAccount.getAccountNumber().substring(
-                Math.max(0, currentAccount.getAccountNumber().length() - 4)), gbc, 14);
+                Math.max(0, currentAccount.getAccountNumber().length() - 4))), gbc, 14);
         
-        // Recipient info for transfers with matching style
+        // Recipient information
         if (recipientInfo != null) {
+            addReceiptLine(contentPanel, "----------------------------------", gbc, 16);
             addReceiptLine(contentPanel, "TO:", gbc, 16);
-            JLabel recipientLabel = new JLabel(recipientInfo);
-            recipientLabel.setFont(new Font("Consolas", Font.BOLD, 18));
-            recipientLabel.setForeground(new Color(255, 255, 0));
-            contentPanel.add(recipientLabel, gbc);
+            addReceiptLine(contentPanel, String.format("  %s", recipientInfo), gbc, 16);
         }
         
-        addReceiptLine(contentPanel, "═══════════════════════", gbc, 16);
-        addReceiptLine(contentPanel, "BALANCE: ₱" + String.format("%,.2f", currentAccount.getBalance()), gbc, 18);
-        addReceiptLine(contentPanel, "═══════════════════════", gbc, 16);
+        // Balance and status information
+        addReceiptLine(contentPanel, "══════════════════════════════", gbc, 16);
+        addReceiptLine(contentPanel, String.format("%-22s ₱%,15.2f", "BALANCE:", currentAccount.getBalance()), gbc, 18);
+        addReceiptLine(contentPanel, "══════════════════════════════", gbc, 16);
         
-        // Footer with system status
-        addReceiptLine(contentPanel, "Transaction ID: " + generateTransactionId(), gbc, 14);
-        addReceiptLine(contentPanel, "Status: APPROVED", gbc, 14);
-        addReceiptLine(contentPanel, "Thank you for using BDA ATM", gbc, 14);
+        // Transaction details
+        addReceiptLine(contentPanel, String.format("TRANS ID: %s", generateTransactionId()), gbc, 14);
+        addReceiptLine(contentPanel, "STATUS: APPROVED", gbc, 14);
+        addReceiptLine(contentPanel, "", gbc, 14);
+        addReceiptLine(contentPanel, "Thank you for banking with BDA ATM", gbc, 14);
+        addReceiptLine(contentPanel, "Please keep this receipt for your records", gbc, 14);
 
         // Add action listeners
         backButton.addActionListener(_ -> {
@@ -3191,33 +3453,70 @@ doneButton = new JButton("DONE") {
     }
 
     private JPanel createATMScreen(String title) {
-        JPanel screenPanel = new JPanel(new BorderLayout(10, 10));
-        screenPanel.setBackground(new Color(30, 30, 30));
+        JPanel screenPanel = new JPanel(new BorderLayout(10, 10)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                
+                // Create lighter gradient background for better visibility
+                GradientPaint gp = new GradientPaint(
+                    0, 0, new Color(45, 50, 55),
+                    getWidth(), getHeight(), new Color(65, 70, 75));
+                g2d.setPaint(gp);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+                
+                // Add subtle grid pattern for depth
+                g2d.setColor(new Color(75, 80, 85, 30));
+                int gridSize = 20;
+                for (int i = 0; i < getWidth(); i += gridSize) {
+                    g2d.drawLine(i, 0, i, getHeight());
+                }
+                for (int i = 0; i < getHeight(); i += gridSize) {
+                    g2d.drawLine(0, i, getWidth(), i);
+                }
+            }
+        };
         screenPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(50, 50, 50), 15),
-            BorderFactory.createLineBorder(Color.BLACK, 10)
+            BorderFactory.createLineBorder(new Color(60, 65, 70), 15),
+            BorderFactory.createLineBorder(new Color(40, 45, 50), 10)
         ));
 
-        // Title panel
-        JPanel titlePanel = new JPanel();
-        titlePanel.setBackground(Color.BLACK);
-        titlePanel.setBorder(BorderFactory.createLineBorder(new Color(0, 100, 0)));
+        // Title panel with enhanced visibility
+        JPanel titlePanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                
+                // Create gradient background for title
+                GradientPaint gp = new GradientPaint(
+                    0, 0, new Color(30, 35, 40),
+                    getWidth(), getHeight(), new Color(40, 45, 50));
+                g2d.setPaint(gp);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
+        titlePanel.setBorder(BorderFactory.createLineBorder(new Color(0, 150, 0)));
         
         JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(new Font("Consolas", Font.BOLD, 22));
-        titleLabel.setForeground(new Color(0, 255, 0));
-        titleLabel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        titleLabel.setFont(new Font("Consolas", Font.BOLD, 24));
+        titleLabel.setForeground(new Color(0, 0, 139));
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(12, 25, 12, 25));
         titlePanel.add(titleLabel);
 
         screenPanel.add(titlePanel, BorderLayout.NORTH);
         
-        // Add side panels for ATM look
+        // Add side panels with improved contrast
         JPanel leftPanel = new JPanel();
         JPanel rightPanel = new JPanel();
-        leftPanel.setBackground(new Color(50, 50, 50));
-        rightPanel.setBackground(new Color(50, 50, 50));
-        leftPanel.setPreferredSize(new Dimension(50, 0));
-        rightPanel.setPreferredSize(new Dimension(50, 0));
+        Color sidePanelColor = new Color(55, 60, 65);
+        leftPanel.setBackground(sidePanelColor);
+        rightPanel.setBackground(sidePanelColor);
+        leftPanel.setPreferredSize(new Dimension(60, 0));
+        rightPanel.setPreferredSize(new Dimension(60, 0));
         
         screenPanel.add(leftPanel, BorderLayout.WEST);
         screenPanel.add(rightPanel, BorderLayout.EAST);

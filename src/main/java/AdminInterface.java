@@ -241,19 +241,65 @@ public class AdminInterface extends JFrame {
         loginPanel.add(loginButton, gbc);
 
         loginButton.addActionListener(_ -> {
-            String username = usernameField.getText();
+            String username = usernameField.getText().trim();
             String password = new String(passwordField.getPassword());
 
-            if (AdminAccount.authenticate(username, password)) {
-                cardLayout.show(mainPanel, "dashboard");
-                usernameField.setText("");
-                passwordField.setText("");
-            } else {
+            // Validate input fields
+            if (username.isEmpty() || password.isEmpty()) {
                 JOptionPane.showMessageDialog(this,
-                    "Invalid username or password",
-                    "Login Error",
-                    JOptionPane.ERROR_MESSAGE);
+                    "Please enter both username and password",
+                    "Input Error",
+                    JOptionPane.WARNING_MESSAGE);
+                return;
             }
+
+            // Disable login button and show loading cursor
+            loginButton.setEnabled(false);
+            setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+            usernameField.setEnabled(false);
+            passwordField.setEnabled(false);
+
+            // Use SwingWorker to handle authentication in background
+            SwingWorker<Boolean, Void> worker = new SwingWorker<Boolean, Void>() {
+                @Override
+                protected Boolean doInBackground() {
+                    return AdminAccount.authenticate(username, password);
+                }
+
+                @Override
+                protected void done() {
+                    try {
+                        boolean success = get();
+                        if (success) {
+                            SwingUtilities.invokeLater(() -> {
+                                cardLayout.show(mainPanel, "dashboard");
+                                usernameField.setText("");
+                                passwordField.setText("");
+                                mainPanel.revalidate();
+                                mainPanel.repaint();
+                            });
+                        } else {
+                            JOptionPane.showMessageDialog(AdminInterface.this,
+                                "Invalid username or password",
+                                "Login Error",
+                                JOptionPane.ERROR_MESSAGE);
+                        }
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(AdminInterface.this,
+                            "An error occurred during login",
+                            "System Error",
+                            JOptionPane.ERROR_MESSAGE);
+                    } finally {
+                        // Re-enable components
+                        loginButton.setEnabled(true);
+                        setCursor(Cursor.getDefaultCursor());
+                        usernameField.setEnabled(true);
+                        passwordField.setEnabled(true);
+                        passwordField.requestFocusInWindow();
+                    }
+                }
+            };
+            worker.execute();
         });
 
         mainPanel.add(loginPanel, "login");
@@ -341,8 +387,9 @@ public class AdminInterface extends JFrame {
                 deletedAccountManager.restoreAccount(accountNumber).ifPresent(deletedAccount -> {
                     Account restoredAccount = new Account(
                         deletedAccount.getAccountNumber(),
-                        deletedAccount.getAccountHolder(),
-                        deletedAccount.getFinalBalance(), accountNumber);
+                        accountNumber, // Using account number as temporary PIN
+                        deletedAccount.getFinalBalance(),
+                        deletedAccount.getAccountHolder());
                     accounts.put(accountNumber, restoredAccount);
                     refreshDeletedAccountsTable();
                     JOptionPane.showMessageDialog(this,
@@ -358,13 +405,43 @@ public class AdminInterface extends JFrame {
             }
         });
 
+        JButton permanentDeleteButton = createFuturisticButton("Permanently Delete");
+        permanentDeleteButton.addActionListener(e -> {
+            int selectedRow = deletedAccountsTable.getSelectedRow();
+            if (selectedRow >= 0) {
+                String accountNumber = (String) deletedAccountsTable.getValueAt(selectedRow, 0);
+                int choice = JOptionPane.showConfirmDialog(this,
+                    "Are you sure you want to permanently delete this account?\n" +
+                    "This action cannot be undone!",
+                    "Confirm Permanent Deletion",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE);
+                
+                if (choice == JOptionPane.YES_OPTION) {
+                    if (deletedAccountManager.permanentlyDeleteAccount(accountNumber)) {
+                        refreshDeletedAccountsTable();
+                        JOptionPane.showMessageDialog(this,
+                            "Account permanently deleted!",
+                            "Success",
+                            JOptionPane.INFORMATION_MESSAGE);
+                    }
+                }
+            } else {
+                JOptionPane.showMessageDialog(this,
+                    "Please select an account to delete",
+                    "No Selection",
+                    JOptionPane.WARNING_MESSAGE);
+            }
+        });
+
         JButton refreshButton = createFuturisticButton("Refresh");
-        refreshButton.addActionListener(e -> refreshDeletedAccountsTable());
+        refreshButton.addActionListener(_ -> refreshDeletedAccountsTable());
 
         JButton backButton = createFuturisticButton("Back");
-        backButton.addActionListener(e -> cardLayout.show(mainPanel, "dashboard"));
+        backButton.addActionListener(_ -> cardLayout.show(mainPanel, "dashboard"));
 
         buttonPanel.add(restoreButton);
+        buttonPanel.add(permanentDeleteButton);
         buttonPanel.add(refreshButton);
         buttonPanel.add(backButton);
 
@@ -488,8 +565,13 @@ public class AdminInterface extends JFrame {
         JButton historyButton = createFuturisticButton("Deletion History");
 
         // Add action listeners
-        createButton.addActionListener(e -> showCreateAccountDialog());
+        createButton.addActionListener(e -> {
+            createButton.setEnabled(false);
+            showCreateAccountDialog();
+            createButton.setEnabled(true);
+        });
         updateButton.addActionListener(e -> {
+            updateButton.setEnabled(false);
             int row = accountTable.getSelectedRow();
             if (row >= 0) {
                 String accNum = (String) accountTable.getValueAt(row, 0);
@@ -501,14 +583,21 @@ public class AdminInterface extends JFrame {
                 JOptionPane.showMessageDialog(this, "Please select an account to update");
             }
         });
-        deleteButton.addActionListener(e -> showDeleteAccountDialog());
-        refreshButton.addActionListener(_ -> refreshData(accountModel, transactionModel));
-        logoutButton.addActionListener(_ -> {
-            cardLayout.show(mainPanel, "login");
-            accountModel.setRowCount(0);
-            transactionModel.setRowCount(0);
+        deleteButton.addActionListener(_ -> {
+            deleteButton.setEnabled(false);
+            showDeleteAccountDialog();
+            deleteButton.setEnabled(true);
         });
-        historyButton.addActionListener(e -> cardLayout.show(mainPanel, "deletedAccounts"));
+        refreshButton.addActionListener(_ -> {
+            refreshButton.setEnabled(false);
+            refreshData(accountModel, transactionModel);
+            refreshButton.setEnabled(true);
+        });
+        historyButton.addActionListener(_ -> {
+            historyButton.setEnabled(false);
+            cardLayout.show(mainPanel, "deletedAccounts");
+            historyButton.setEnabled(true);
+        });
 
         // Add buttons to panel
         crudPanel.add(createButton);
@@ -522,7 +611,11 @@ public class AdminInterface extends JFrame {
         dashboardPanel.add(splitPane, BorderLayout.CENTER);
         dashboardPanel.add(crudPanel, BorderLayout.SOUTH);
 
+        // Add dashboard panel to card layout
         mainPanel.add(dashboardPanel, "dashboard");
+        
+        // Initial data load
+        refreshData(accountModel, transactionModel);
     }
 
     private void showDeleteAccountDialog() {
@@ -573,7 +666,7 @@ public class AdminInterface extends JFrame {
         JButton confirmButton = createFuturisticButton("Confirm");
         JButton cancelButton = createFuturisticButton("Cancel");
 
-        confirmButton.addActionListener(e -> {
+        confirmButton.addActionListener(_ -> {
             String reason = reasonField.getText().trim();
             if (reason.isEmpty()) {
                 JOptionPane.showMessageDialog(dialog, "Please provide a reason for deletion");
@@ -586,7 +679,7 @@ public class AdminInterface extends JFrame {
             dialog.dispose();
         });
 
-        cancelButton.addActionListener(e -> dialog.dispose());
+        cancelButton.addActionListener(_ -> dialog.dispose());
 
         buttonPanel.add(confirmButton);
         buttonPanel.add(cancelButton);
@@ -598,18 +691,12 @@ public class AdminInterface extends JFrame {
         dialog.setLocationRelativeTo(this);
         dialog.setVisible(true);
 
-        // Create top panel for buttons
-        JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.add(crudPanel, BorderLayout.CENTER);
-
-        Container dashboardPanel = null;
-        dashboardPanel.add(topPanel, BorderLayout.NORTH);
-        dashboardPanel.add(splitPane, BorderLayout.CENTER);
+        // Remove the problematic null container code that was causing issues
 
         // Add selection listener to the account table
         accountTable.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
-int selectedRow = accountTable.getSelectedRow();
+                int selectedRow = accountTable.getSelectedRow();
                 if (selectedRow >= 0) {
                     String selectedAccNum = (String) accountTable.getValueAt(selectedRow, 0);
                     Account selectedAccount = accounts.get(selectedAccNum);
@@ -620,7 +707,7 @@ int selectedRow = accountTable.getSelectedRow();
             }
         });
 
-        mainPanel.add(dashboardPanel, "dashboard");
+        mainPanel.add(splitPane, "dashboard");
         
         // Initial data load
         refreshData(accountModel, transactionModel);
@@ -691,6 +778,7 @@ int selectedRow = accountTable.getSelectedRow();
         JButton createButton = new JButton("Create");
         createButton.addActionListener(e -> {
             try {
+                createButton.setEnabled(false);
                 String accNum = accNumField.getText();
                 if (accounts.containsKey(accNum)) {
                     JOptionPane.showMessageDialog(dialog, "Account number already exists!");
@@ -713,8 +801,10 @@ int selectedRow = accountTable.getSelectedRow();
 
                 Account newAccount = new Account(accNum, pin, initialDeposit, name);
                 accounts.put(accNum, newAccount);
+                refreshData(accountModel, transactionModel);
                 dialog.dispose();
                 JOptionPane.showMessageDialog(this, "Account created successfully!");
+                createButton.setEnabled(true);
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(dialog, "Please enter a valid amount for initial deposit!");
             }
@@ -765,10 +855,10 @@ int selectedRow = accountTable.getSelectedRow();
             // Update account details
             account.setPin(pin);
             account.setAccountHolder(name);
-            dialog.dispose();
-            DefaultTableModel transactionModel = null;
             refreshData(accountModel, transactionModel);
+            dialog.dispose();
             JOptionPane.showMessageDialog(this, "Account updated successfully!");
+            updateButton.setEnabled(true);
         });
 
         gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2;

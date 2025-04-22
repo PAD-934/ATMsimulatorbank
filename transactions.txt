@@ -5,3 +5,6 @@
 090304,CARD_EJECTED,0.00,1744307621560,Paul Allen P. Diaz
 090304,CARD_EJECTED,0.00,1744783787262,Paul Allen P. Diaz
 090304,CARD_EJECTED,0.00,1744787532720,Paul Allen P. Diaz
+1234,CARD_EJECTED,0.00,1744791065175,Paul
+1234,TRANSFER_OUT,500.00,1744791193040,Transfer to Account 090304 (Paul Allen P. Diaz): Transfer between Paul and Paul Allen P. Diaz
+090304,TRANSFER_IN,500.00,1744791193041,Transfer from Account 1234 (Paul): Transfer between Paul and Paul Allen P. Diaz

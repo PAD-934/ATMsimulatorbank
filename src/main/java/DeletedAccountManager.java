@@ -42,6 +42,19 @@ public class DeletedAccountManager {
         return accountToRestore;
     }
 
+    public boolean permanentlyDeleteAccount(String accountNumber) {
+        Optional<DeletedAccount> accountToDelete = deletedAccounts.stream()
+            .filter(acc -> acc.getAccountNumber().equals(accountNumber))
+            .findFirst();
+        
+        if (accountToDelete.isPresent()) {
+            deletedAccounts.remove(accountToDelete.get());
+            saveDeletedAccounts();
+            return true;
+        }
+        return false;
+    }
+
     private void loadDeletedAccounts() {
         File file = new File(DELETED_ACCOUNTS_FILE);
         if (!file.exists()) {
