@@ -82,6 +82,75 @@ public class Account {
         addTransaction("ACCOUNT_UPDATE", 0.0, balance, "Account holder updated");
     }
 
+    public void setAccountNumber(String newAccountNumber) {
+        String validationResult = validateAccount(newAccountNumber);
+        if (validationResult != null) {
+            throw new IllegalArgumentException(validationResult);
+        }
+        String oldAccountNumber = this.accountNumber;
+        this.accountNumber = newAccountNumber;
+        addTransaction("ACCOUNT_NUMBER_CHANGE", 0.0, balance, 
+            String.format("Account number changed from %s to %s", oldAccountNumber, newAccountNumber));
+        TransactionHistory.saveTransaction(newAccountNumber, "ACCOUNT_NUMBER_CHANGE", 0.0, accountHolder);
+    }
+
+    public static String validatePin(String pin) {
+        if (pin == null || pin.trim().isEmpty()) {
+            return "PIN cannot be empty";
+        }
+        if (!pin.matches("^\\d{4,6}$")) {
+            return "PIN must be 4-6 digits";
+        }
+        return null; // validation passed
+    }
+
+    public void updatePin(String oldPin, String newPin) {
+        if (!this.pin.equals(oldPin)) {
+            throw new IllegalArgumentException("Current PIN is incorrect");
+        }
+        String validationResult = validatePin(newPin);
+        if (validationResult != null) {
+            throw new IllegalArgumentException(validationResult);
+        }
+        this.pin = newPin;
+        addTransaction("PIN_CHANGE", 0.0, balance, "PIN updated successfully");
+        TransactionHistory.saveTransaction(accountNumber, "PIN_CHANGE", 0.0, accountHolder);
+    }
+
+    public void updateAccount(String newAccountNumber, String oldPin, String newPin, String newAccountHolder, double depositAmount) {
+        if (deleted) {
+            throw new IllegalStateException("Account has been deleted: " + deletionReason);
+        }
+        if (blocked) {
+            throw new IllegalStateException("Account is blocked");
+        }
+        
+        // Verify current PIN
+        if (!this.pin.equals(oldPin)) {
+            throw new IllegalArgumentException("Current PIN is incorrect");
+        }
+        
+        // Update account number if provided
+        if (newAccountNumber != null && !newAccountNumber.equals(this.accountNumber)) {
+            setAccountNumber(newAccountNumber);
+        }
+        
+        // Update PIN if provided
+        if (newPin != null && !newPin.equals(oldPin)) {
+            updatePin(oldPin, newPin);
+        }
+        
+        // Update account holder if provided
+        if (newAccountHolder != null && !newAccountHolder.equals(this.accountHolder)) {
+            setAccountHolder(newAccountHolder);
+        }
+        
+        // Process deposit if amount is provided
+        if (depositAmount > 0) {
+            deposit(depositAmount);
+        }
+    }
+
     public void deposit(double amount) {
         if (deleted) {
             throw new IllegalStateException("Account has been deleted: " + deletionReason);
@@ -280,8 +349,8 @@ public class Account {
         return transactionHistory;
     }
 
-    private void addTransaction(String type, double amount, double balanceAfter, String description) {
-        Transaction transaction = new Transaction(type, amount, balanceAfter, description);
+    public void addTransaction(String type, double amount, double newBalance, String description) {
+        Transaction transaction = new Transaction(type, amount, newBalance, description);
         transactionHistory.add(transaction);
     }
 

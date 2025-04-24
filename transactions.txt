@@ -8,3 +8,40 @@
 1234,CARD_EJECTED,0.00,1744791065175,Paul
 1234,TRANSFER_OUT,500.00,1744791193040,Transfer to Account 090304 (Paul Allen P. Diaz): Transfer between Paul and Paul Allen P. Diaz
 090304,TRANSFER_IN,500.00,1744791193041,Transfer from Account 1234 (Paul): Transfer between Paul and Paul Allen P. Diaz
+090304,TRANSFER_OUT,100.00,1745478648845,TRANSFER TO:
+  Account: 1234
+  Name: Paul
+  Amount: ₱100.00
+  Description: Transfer between Paul Allen P. Diaz and Paul
+1234,TRANSFER_IN,100.00,1745478648845,TRANSFER FROM:
+  Account: 090304
+  Name: Paul Allen P. Diaz
+  Amount: ₱100.00
+  Description: Transfer between Paul Allen P. Diaz and Paul
+090304,CARD_EJECTED,0.00,1745478666876,Paul Allen P. Diaz
+090304,TRANSFER_OUT,100.00,1745479273323,TRANSFER TO:
+  Account: 1234
+  Name: Paul
+  Amount: ₱100.00
+  Description: Transfer between Paul Allen P. Diaz and Paul
+1234,TRANSFER_IN,100.00,1745479273323,TRANSFER FROM:
+  Account: 090304
+  Name: Paul Allen P. Diaz
+  Amount: ₱100.00
+  Description: Transfer between Paul Allen P. Diaz and Paul
+090304,CARD_EJECTED,0.00,1745479281403,Paul Allen P. Diaz
+090304,CARD_EJECTED,0.00,1745481976786,Paul Allen P. Diaz
+090304,WITHDRAWAL,1000.00,1745481993281,Paul Allen P. Diaz
+090304,DEPOSIT,1000.00,1745482015293,Paul Allen P. Diaz
+090304,CARD_EJECTED,0.00,1745482042682,Paul Allen P. Diaz
+090304,CARD_EJECTED,0.00,1745482093794,Paul Allen P. Diaz
+090304,TRANSFER_OUT,1000.00,1745482148095,TRANSFER TO:
+  Account: 123456
+  Name: Karl Apelado
+  Amount: ₱1000.00
+  Description: Transfer between Paul Allen P. Diaz and Karl Apelado
+123456,TRANSFER_IN,1000.00,1745482148095,TRANSFER FROM:
+  Account: 090304
+  Name: Paul Allen P. Diaz
+  Amount: ₱1000.00
+  Description: Transfer between Paul Allen P. Diaz and Karl Apelado

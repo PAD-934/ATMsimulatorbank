@@ -5,6 +5,7 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 
 public class AdminInterface extends JFrame {
     // Custom colors for futuristic theme
@@ -138,6 +139,22 @@ public class AdminInterface extends JFrame {
     private DefaultTableModel accountModel;
     private DefaultTableModel deletedAccountModel;
     private DeletedAccountManager deletedAccountManager;
+    
+    // Generate a unique 8-digit account number
+    private String generateUniqueAccountNumber() {
+        Random random = new Random();
+        String accountNumber;
+        do {
+            accountNumber = String.format("%08d", random.nextInt(100000000));
+        } while (accounts.containsKey(accountNumber));
+        return accountNumber;
+    }
+    
+    // Generate a random 4-digit PIN
+    private String generateRandomPin() {
+        Random random = new Random();
+        return String.format("%04d", random.nextInt(10000));
+    }
 
     public AdminInterface(HashMap<String, Account> accounts) {
         this.accounts = accounts;
@@ -385,12 +402,26 @@ public class AdminInterface extends JFrame {
             if (selectedRow >= 0) {
                 String accountNumber = (String) deletedAccountsTable.getValueAt(selectedRow, 0);
                 deletedAccountManager.restoreAccount(accountNumber).ifPresent(deletedAccount -> {
+                    // Generate new account number and PIN
+                    String newAccountNumber = generateUniqueAccountNumber();
+                    String newPin = generateRandomPin();
                     Account restoredAccount = new Account(
-                        deletedAccount.getAccountNumber(),
-                        accountNumber, // Using account number as temporary PIN
+                        newAccountNumber,
+                        newPin,
                         deletedAccount.getFinalBalance(),
                         deletedAccount.getAccountHolder());
-                    accounts.put(accountNumber, restoredAccount);
+                    // Add a transaction record for the restored balance
+                    restoredAccount.addTransaction("ACCOUNT_RESTORED", deletedAccount.getFinalBalance(), 
+                        deletedAccount.getFinalBalance(), 
+                        "Account restored from deleted account " + deletedAccount.getAccountNumber());
+                    
+                    // Show the new credentials to admin
+                    JOptionPane.showMessageDialog(this,
+                        String.format("New Account Credentials:\nAccount Number: %s\nPIN: %s",
+                            newAccountNumber, newPin),
+                        "Account Restored",
+                        JOptionPane.INFORMATION_MESSAGE);
+                    accounts.put(newAccountNumber, restoredAccount);
                     refreshDeletedAccountsTable();
                     JOptionPane.showMessageDialog(this,
                         "Account restored successfully!",
@@ -565,12 +596,12 @@ public class AdminInterface extends JFrame {
         JButton historyButton = createFuturisticButton("Deletion History");
 
         // Add action listeners
-        createButton.addActionListener(e -> {
+        createButton.addActionListener(_ -> {
             createButton.setEnabled(false);
             showCreateAccountDialog();
             createButton.setEnabled(true);
         });
-        updateButton.addActionListener(e -> {
+        updateButton.addActionListener(_ -> {
             updateButton.setEnabled(false);
             int row = accountTable.getSelectedRow();
             if (row >= 0) {
@@ -776,7 +807,7 @@ public class AdminInterface extends JFrame {
         dialog.add(initialDepositField, gbc);
 
         JButton createButton = new JButton("Create");
-        createButton.addActionListener(e -> {
+        createButton.addActionListener(_ -> {
             try {
                 createButton.setEnabled(false);
                 String accNum = accNumField.getText();
@@ -843,7 +874,7 @@ public class AdminInterface extends JFrame {
         dialog.add(pinField, gbc);
 
         JButton updateButton = new JButton("Update");
-        updateButton.addActionListener(e -> {
+        updateButton.addActionListener(_ -> {
             String name = nameField.getText();
             String pin = new String(pinField.getPassword());
 

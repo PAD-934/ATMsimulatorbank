@@ -18,6 +18,10 @@ public class ATMInterface extends JFrame {
     private JPanel mainPanel;
     private CardLayout cardLayout;
 
+    public HashMap<String, Account> getAccounts() {
+        return accounts;
+    }
+
     private JPanel splashScreen;
     private Timer splashTimer;
     private float glowIntensity = 0.0f;
@@ -26,6 +30,10 @@ public class ATMInterface extends JFrame {
     private JLabel cardSlotLabel;
     private JPanel cardPanel;
     private boolean cardInserted = false;
+    
+    // Text fields for account and transaction input
+    private JTextField accountField;
+    private JTextField amountField;
     
     // Track login attempts and blocked accounts
     private HashMap<String, Integer> loginAttempts;
@@ -79,7 +87,10 @@ public class ATMInterface extends JFrame {
             public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
                     simulateCardEjection();
-                    Timer exitTimer = null;
+                    Timer exitTimer = new Timer(1000, event -> {
+                        dispose();
+                        System.exit(0);
+                    });
                     exitTimer.setRepeats(false);
                     exitTimer.start();
                 }
@@ -1665,7 +1676,7 @@ public class ATMInterface extends JFrame {
             long time = System.currentTimeMillis();
             float pulse = (float) (0.9 + 0.1 * Math.sin(time / 800.0));
             balanceAmount.setForeground(new Color(0, (int)(255 * pulse), 0));
-            Frame glowPanel = null;
+            JPanel glowPanel = new JPanel();
             glowPanel.setBackground(new Color(0, (int)(40 * pulse), 0));
             
             // Update balance in real-time with full precision
@@ -2245,8 +2256,10 @@ public class ATMInterface extends JFrame {
         });
 
         cancelButton.addActionListener(_ -> {
-            logout();
-            simulateCardEjection();
+            playSound("button");
+            cardLayout.show(mainPanel, "mainMenu");
+            accountField.setText("");
+            amountField.setText("");
         });
     }
 
@@ -2960,8 +2973,10 @@ public class ATMInterface extends JFrame {
         });
 
         cancelButton.addActionListener(_ -> {
-            logout();
-            simulateCardEjection();
+            playSound("button");
+            cardLayout.show(mainPanel, "mainMenu");
+            accountField.setText("");
+            amountField.setText("");
         });
     }
 
@@ -3213,8 +3228,10 @@ public class ATMInterface extends JFrame {
         });
 
         cancelButton.addActionListener(_ -> {
-            logout();
-            simulateCardEjection();
+            playSound("button");
+            cardLayout.show(mainPanel, "mainMenu");
+            accountField.setText("");
+            amountField.setText("");
         });
     }
 
